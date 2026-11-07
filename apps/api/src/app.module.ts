@@ -12,6 +12,8 @@ import { AttributesModule } from "./attributes/attributes.module";
 import { CategoriesModule } from "./categories/categories.module";
 import { ProductsModule } from "./products/products.module";
 import { CatalogModule } from "./catalog/catalog.module";
+import { CmsModule } from "./cms/cms.module";
+import { MediaModule } from "./media/media.module";
 import { JwtAuthGuard } from "./common/guards/jwt-auth.guard";
 import { PermissionsGuard } from "./common/guards/permissions.guard";
 
@@ -28,6 +30,8 @@ import { PermissionsGuard } from "./common/guards/permissions.guard";
     CategoriesModule,
     ProductsModule,
     CatalogModule,
+    CmsModule,
+    MediaModule,
   ],
   controllers: [HealthController],
   providers: [

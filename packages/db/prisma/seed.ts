@@ -19,13 +19,17 @@ const permissions = [
   ["audit:read", "Read audit logs"],
   ["catalog:read", "Read catalog data in admin"],
   ["catalog:write", "Manage catalog data"],
+  ["cms:read", "Read CMS/pages in admin"],
+  ["cms:write", "Manage CMS/pages"],
+  ["media:read", "Read media assets"],
+  ["media:write", "Manage media assets"],
 ] as const;
 
 async function main() {
   await prisma.storeSetting.upsert({
     where: { key: "store.bootstrap" },
-    update: { value: { ok: true, sprint: 3 } },
-    create: { key: "store.bootstrap", value: { ok: true, sprint: 3 } },
+    update: { value: { ok: true, sprint: 4 } },
+    create: { key: "store.bootstrap", value: { ok: true, sprint: 4 } },
   });
 
   for (const [key, description] of permissions) {
@@ -79,10 +83,22 @@ async function main() {
       actorEmail: admin.email,
       action: "seed.bootstrap",
       entity: "system",
-      entityId: "sprint-3",
+      entityId: "sprint-4",
       after: { adminEmail, permissions: permissions.map(([k]) => k) },
     },
   });
+
+  const home = await prisma.page.upsert({ where: { slug: "home" }, update: { title: "Home", type: "HOME", status: "PUBLISHED" }, create: { title: "Home", slug: "home", type: "HOME", status: "PUBLISHED", publishedAt: new Date() } });
+  const existingVersion = await prisma.pageVersion.findFirst({ where: { pageId: home.id, isPublished: true } });
+  if (!existingVersion) {
+    const version = await prisma.pageVersion.create({ data: { pageId: home.id, version: 1, label: "Initial", isPublished: true, sections: { create: [
+      { type: "hero", sortOrder: 0, config: { eyebrow: "AGHACI", title: "پوشاک مدرن، تجربه خرید پریمیوم", subtitle: "این صفحه از CMS دیتابیس‌محور رندر می‌شود.", ctaLabel: "مشاهده محصولات", ctaHref: "/products" } },
+      { type: "product_grid", sortOrder: 1, config: { title: "محصولات منتخب", source: "published", limit: 6 } },
+    ] } } });
+    await prisma.page.update({ where: { id: home.id }, data: { publishedVersionId: version.id, draftVersionId: version.id } });
+  }
+  await prisma.globalLayout.upsert({ where: { key: "default" }, update: {}, create: { key: "default", header: { brand: "AGHACI", links: [{ label: "خانه", href: "/" }, { label: "محصولات", href: "/products" }] }, footer: { text: "© Aghaci" } } });
+  await prisma.navigationMenu.upsert({ where: { key: "main" }, update: { name: "Main" }, create: { key: "main", name: "Main", items: { create: [{ label: "خانه", href: "/", sortOrder: 0 }, { label: "محصولات", href: "/products", sortOrder: 1 }] } } });
 
   const color = await prisma.attribute.upsert({ where: { slug: "color" }, update: { name: "رنگ" }, create: { name: "رنگ", slug: "color", sortOrder: 1 } });
   const size = await prisma.attribute.upsert({ where: { slug: "size" }, update: { name: "سایز" }, create: { name: "سایز", slug: "size", sortOrder: 2 } });

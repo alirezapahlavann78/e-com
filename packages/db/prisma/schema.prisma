@@ -30,6 +30,29 @@ enum ProductRelationType {
   COMPLEMENTARY
 }
 
+enum PageStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+  ARCHIVED
+}
+
+enum PageType {
+  HOME
+  PRODUCT_TEMPLATE
+  CATEGORY_TEMPLATE
+  BRAND
+  LANDING
+  BLOG
+  STATIC
+  CUSTOM
+}
+
+enum RedirectType {
+  PERMANENT_301
+  TEMPORARY_302
+}
+
 model User {
   id            String         @id @default(cuid())
   email         String         @unique
@@ -293,4 +316,126 @@ model ProductRelation {
 
   @@id([fromProductId, toProductId, type])
   @@index([toProductId])
+}
+
+model Page {
+  id             String        @id @default(cuid())
+  title          String
+  slug           String        @unique
+  type           PageType      @default(CUSTOM)
+  status         PageStatus    @default(DRAFT)
+  templateKey    String?
+  publishedAt    DateTime?
+  scheduledAt    DateTime?
+  metaTitle      String?
+  metaDescription String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  versions       PageVersion[]
+  publishedVersionId String?   @unique
+  publishedVersion   PageVersion? @relation("PublishedPageVersion", fields: [publishedVersionId], references: [id], onDelete: SetNull)
+  draftVersionId     String?   @unique
+  draftVersion       PageVersion? @relation("DraftPageVersion", fields: [draftVersionId], references: [id], onDelete: SetNull)
+
+  @@index([status, type])
+  @@index([publishedAt])
+}
+
+model PageVersion {
+  id          String        @id @default(cuid())
+  pageId      String
+  version     Int
+  label       String?
+  isPublished Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  page        Page          @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  sections    PageSection[]
+  publishedFor Page?        @relation("PublishedPageVersion")
+  draftFor     Page?        @relation("DraftPageVersion")
+
+  @@unique([pageId, version])
+  @@index([pageId, createdAt])
+}
+
+model PageSection {
+  id            String      @id @default(cuid())
+  pageVersionId String
+  type          String
+  sortOrder     Int         @default(0)
+  isVisible     Boolean     @default(true)
+  config        Json
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  pageVersion   PageVersion @relation(fields: [pageVersionId], references: [id], onDelete: Cascade)
+
+  @@index([pageVersionId, sortOrder])
+}
+
+model GlobalLayout {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  header    Json?
+  footer    Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model NavigationMenu {
+  id        String           @id @default(cuid())
+  name      String
+  key       String           @unique
+  items     NavigationItem[]
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+}
+
+model NavigationItem {
+  id        String          @id @default(cuid())
+  menuId    String
+  parentId  String?
+  label     String
+  href      String?
+  pageId    String?
+  sortOrder Int             @default(0)
+  isVisible Boolean         @default(true)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  menu      NavigationMenu  @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  parent    NavigationItem? @relation("NavTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children  NavigationItem[] @relation("NavTree")
+
+  @@index([menuId, sortOrder])
+  @@index([parentId])
+}
+
+model MediaAsset {
+  id         String   @id @default(cuid())
+  key        String   @unique
+  bucket     String
+  url        String
+  mimeType   String
+  size       Int
+  alt        String?
+  folder     String?
+  tags       String[] @default([])
+  uploadedBy String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([folder])
+  @@index([createdAt])
+}
+
+model Redirect {
+  id         String       @id @default(cuid())
+  fromPath   String       @unique
+  toPath     String
+  type       RedirectType @default(PERMANENT_301)
+  entityType String?
+  entityId   String?
+  isActive   Boolean      @default(true)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  @@index([isActive])
 }
