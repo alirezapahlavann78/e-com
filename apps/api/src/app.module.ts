@@ -18,6 +18,7 @@ import { RedirectsModule } from "./redirects/redirects.module";
 import { CartModule } from "./cart/cart.module";
 import { CheckoutModule } from "./checkout/checkout.module";
 import { InventoryModule } from "./inventory/inventory.module";
+import { OrdersModule } from "./orders/orders.module";
 import { JwtAuthGuard } from "./common/guards/jwt-auth.guard";
 import { PermissionsGuard } from "./common/guards/permissions.guard";
 
@@ -40,6 +41,7 @@ import { PermissionsGuard } from "./common/guards/permissions.guard";
     CartModule,
     CheckoutModule,
     InventoryModule,
+    OrdersModule,
   ],
   controllers: [HealthController],
   providers: [

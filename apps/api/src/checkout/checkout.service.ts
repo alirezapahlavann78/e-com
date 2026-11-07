@@ -26,6 +26,7 @@ export class CheckoutService {
           number: orderNumber(), userId: input.userId, cartId: fresh.id, email: input.email, status: "AWAITING_PAYMENT", paymentStatus: "PENDING",
           currency: fresh.currency, subtotal, discountAmount: 0, shippingAmount: 0, taxAmount: 0, total, shippingAddress: input.shippingAddress as any, placedAt: new Date(),
           items: { create: fresh.items.map((i) => ({ productId: i.productId, variantId: i.variantId, name: i.product.name, sku: i.variant?.sku ?? i.product.sku, variantTitle: i.variant?.title, quantity: i.quantity, unitPrice: i.unitPrice, totalPrice: Number(i.unitPrice) * i.quantity, imageUrl: i.variant?.imageUrl ?? null })) },
+          statusHistory: { create: { toStatus: "AWAITING_PAYMENT", toPayment: "PENDING", note: "Order created from checkout" } },
         },
         include: { items: true },
       });
@@ -55,8 +56,10 @@ export class CheckoutService {
     if (!payment) throw new NotFoundException("Payment not found");
     const result = await this.payment.verify({ reference, authority: payment.authority ?? undefined });
     await this.prisma.$transaction(async (tx) => {
+      const before = await tx.order.findUnique({ where: { id: payment.orderId } });
       await tx.payment.update({ where: { id: payment.id }, data: { status: result.status, rawResponse: result.raw as any, paidAt: result.status === "PAID" ? new Date() : null } });
-      await tx.order.update({ where: { id: payment.orderId }, data: { status: result.status === "PAID" ? "PAID" : "CANCELLED", paymentStatus: result.status } });
+      const order = await tx.order.update({ where: { id: payment.orderId }, data: { status: result.status === "PAID" ? "PAID" : "CANCELLED", paymentStatus: result.status } });
+      await tx.orderStatusHistory.create({ data: { orderId: order.id, fromStatus: before?.status, toStatus: order.status, fromPayment: before?.paymentStatus, toPayment: order.paymentStatus, note: `Sandbox payment ${result.status}` } });
       if (result.status !== "PAID") {
         const items = await tx.orderItem.findMany({ where: { orderId: payment.orderId } });
         const warehouse = await tx.warehouse.findFirst({ where: { isDefault: true, isActive: true } }) ?? await tx.warehouse.findFirst({ where: { isActive: true } });
