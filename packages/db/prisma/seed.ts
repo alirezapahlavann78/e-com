@@ -27,13 +27,15 @@ const permissions = [
   ["inventory:write", "Manage inventory/warehouses/stock"],
   ["orders:read", "Read orders/returns/invoices"],
   ["orders:write", "Manage orders/returns/invoices/refunds"],
+  ["crm:read", "Read CRM customers/segments/reviews"],
+  ["crm:write", "Manage CRM customers/segments/reviews/marketing"],
 ] as const;
 
 async function main() {
   await prisma.storeSetting.upsert({
     where: { key: "store.bootstrap" },
-    update: { value: { ok: true, sprint: 8 } },
-    create: { key: "store.bootstrap", value: { ok: true, sprint: 8 } },
+    update: { value: { ok: true, sprint: 9 } },
+    create: { key: "store.bootstrap", value: { ok: true, sprint: 9 } },
   });
 
   for (const [key, description] of permissions) {
@@ -87,7 +89,7 @@ async function main() {
       actorEmail: admin.email,
       action: "seed.bootstrap",
       entity: "system",
-      entityId: "sprint-8",
+      entityId: "sprint-9",
       after: { adminEmail, permissions: permissions.map(([k]) => k) },
     },
   });

@@ -19,6 +19,7 @@ import { CartModule } from "./cart/cart.module";
 import { CheckoutModule } from "./checkout/checkout.module";
 import { InventoryModule } from "./inventory/inventory.module";
 import { OrdersModule } from "./orders/orders.module";
+import { DiscountsModule } from "./discounts/discounts.module";
 import { JwtAuthGuard } from "./common/guards/jwt-auth.guard";
 import { PermissionsGuard } from "./common/guards/permissions.guard";
 
@@ -38,6 +39,7 @@ import { PermissionsGuard } from "./common/guards/permissions.guard";
     CmsModule,
     MediaModule,
     RedirectsModule,
+    DiscountsModule,
     CartModule,
     CheckoutModule,
     InventoryModule,

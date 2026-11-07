@@ -121,6 +121,42 @@ enum RefundStatus {
   FAILED
 }
 
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  ACTIVE
+  PAUSED
+  ENDED
+}
+
+enum DiscountType {
+  PERCENT
+  FIXED_AMOUNT
+  FREE_SHIPPING
+}
+
+enum CustomerNoteType {
+  GENERAL
+  SUPPORT
+  RISK
+  MARKETING
+}
+
+enum CustomerActivityType {
+  ORDER_PLACED
+  REVIEW_SUBMITTED
+  WISHLIST_ADDED
+  CART_ABANDONED
+  TAG_ADDED
+  NOTE_ADDED
+}
+
 model User {
   id            String         @id @default(cuid())
   email         String         @unique
@@ -140,6 +176,14 @@ model User {
   carts         Cart[]
   addresses     CustomerAddress[]
   orders        Order[]
+  profile       CustomerProfile?
+  segmentLinks  CustomerSegmentMember[]
+  tagLinks      CustomerTagAssignment[]
+  notes         CustomerNote[]          @relation("CustomerNoteUser")
+  activities    CustomerActivity[]
+  reviews       ProductReview[]
+  wishlistItems WishlistItem[]
+  campaignLogs  CampaignRecipient[]
 }
 
 model Role {
@@ -285,6 +329,9 @@ model Product {
   inventoryItems    InventoryItem[]
   stockMovements    StockMovement[]
   stockReservations StockReservation[]
+  reviews           ProductReview[]
+  wishlistItems     WishlistItem[]
+  campaignProducts  CampaignProduct[]
 
   @@index([status, publishedAt])
   @@index([type])
@@ -543,15 +590,20 @@ model CustomerAddress {
 }
 
 model Cart {
-  id          String     @id @default(cuid())
-  userId      String?    @unique
-  guestToken  String?    @unique
-  currency    String     @default("IRR")
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  user        User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
-  items       CartItem[]
-  orders      Order[]
+  id             String     @id @default(cuid())
+  userId         String?    @unique
+  guestToken     String?    @unique
+  discountCodeId String?
+  currency       String     @default("IRR")
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  user           User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  discountCode   DiscountCode? @relation(fields: [discountCodeId], references: [id], onDelete: SetNull)
+  items          CartItem[]
+  orders         Order[]
+  snapshot       AbandonedCartSnapshot?
+
+  @@index([discountCodeId])
 }
 
 model CartItem {
@@ -572,20 +624,29 @@ model CartItem {
 }
 
 model DiscountCode {
-  id              String    @id @default(cuid())
-  code            String    @unique
+  id              String       @id @default(cuid())
+  code            String       @unique
   description     String?
-  type            String    @default("PERCENT")
-  value           Decimal   @db.Decimal(12, 2)
-  minOrderAmount  Decimal?  @db.Decimal(12, 2)
+  type            DiscountType @default(PERCENT)
+  value           Decimal      @db.Decimal(12, 2)
+  minOrderAmount  Decimal?     @db.Decimal(12, 2)
   maxUses         Int?
-  usedCount       Int       @default(0)
+  usedCount       Int          @default(0)
   startsAt        DateTime?
   endsAt          DateTime?
-  isActive        Boolean   @default(true)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  isActive        Boolean      @default(true)
+  campaignId      String?
+  segmentId       String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
   orders          Order[]
+  campaign        Campaign?       @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  segment         CustomerSegment? @relation(fields: [segmentId], references: [id], onDelete: SetNull)
+  redemptions     DiscountRedemption[]
+  carts           Cart[]
+
+  @@index([campaignId])
+  @@index([segmentId])
 }
 
 model Order {
@@ -606,7 +667,7 @@ model Order {
   discountCodeId    String?
   shippingAddress   Json?
   billingAddress    Json?
-  notes             String?
+  customerNote      String?
   placedAt          DateTime?
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
@@ -624,9 +685,11 @@ model Order {
   invoices          Invoice[]
   returnRequests    ReturnRequest[]
   refunds           Refund[]
+  discountRedemptions DiscountRedemption[]
 
   @@index([userId, createdAt])
   @@index([status, paymentStatus])
+  @@index([discountCodeId])
 }
 
 model OrderItem {
@@ -848,4 +911,219 @@ model Refund {
   order           Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
   returnRequest   ReturnRequest? @relation(fields: [returnRequestId], references: [id], onDelete: SetNull)
   @@index([orderId, status])
+}
+model CustomerProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  marketingOptIn  Boolean  @default(false)
+  smsOptIn        Boolean  @default(false)
+  lifetimeValue   Decimal  @default(0) @db.Decimal(12, 2)
+  ordersCount     Int      @default(0)
+  lastOrderAt     DateTime?
+  metadata        Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([lastOrderAt])
+}
+
+model CustomerSegment {
+  id          String                  @id @default(cuid())
+  name        String
+  slug        String                  @unique
+  description String?
+  isDynamic   Boolean                 @default(false)
+  rules       Json?
+  isActive    Boolean                 @default(true)
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+  members     CustomerSegmentMember[]
+  discountCodes DiscountCode[]
+  campaigns   Campaign[]
+}
+
+model CustomerSegmentMember {
+  segmentId  String
+  userId     String
+  assignedAt DateTime        @default(now())
+  segment    CustomerSegment @relation(fields: [segmentId], references: [id], onDelete: Cascade)
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([segmentId, userId])
+  @@index([userId])
+}
+
+model CustomerTag {
+  id          String                  @id @default(cuid())
+  name        String
+  slug        String                  @unique
+  color       String?
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+  assignments CustomerTagAssignment[]
+}
+
+model CustomerTagAssignment {
+  tagId      String
+  userId     String
+  assignedAt DateTime    @default(now())
+  tag        CustomerTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([tagId, userId])
+  @@index([userId])
+}
+
+model CustomerNote {
+  id         String           @id @default(cuid())
+  userId     String
+  type       CustomerNoteType @default(GENERAL)
+  body       String
+  actorId    String?
+  actorEmail String?
+  createdAt  DateTime         @default(now())
+  user       User             @relation("CustomerNoteUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model CustomerActivity {
+  id        String               @id @default(cuid())
+  userId    String
+  type      CustomerActivityType
+  entity    String?
+  entityId  String?
+  summary   String
+  metadata  Json?
+  createdAt DateTime             @default(now())
+  user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([type], map: "CustomerActivity_type_idx")
+}
+
+model ProductReview {
+  id          String       @id @default(cuid())
+  productId   String
+  userId      String?
+  authorName  String?
+  rating      Int
+  title       String?
+  body        String
+  status      ReviewStatus @default(PENDING)
+  isVerified  Boolean      @default(false)
+  moderatedBy String?
+  moderatedAt DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  product     Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user        User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([productId, status, createdAt])
+  @@index([userId])
+}
+
+model WishlistItem {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([productId])
+}
+
+model Campaign {
+  id          String          @id @default(cuid())
+  name        String
+  slug        String          @unique
+  description String?
+  status      CampaignStatus  @default(DRAFT)
+  channel     String          @default("EMAIL")
+  startsAt    DateTime?
+  endsAt      DateTime?
+  segmentId   String?
+  metadata    Json?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  segment     CustomerSegment? @relation(fields: [segmentId], references: [id], onDelete: SetNull)
+  discountCodes DiscountCode[]
+  products    CampaignProduct[]
+  recipients  CampaignRecipient[]
+
+  @@index([status, startsAt])
+}
+
+model CampaignProduct {
+  campaignId String
+  productId  String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([campaignId, productId])
+  @@index([productId])
+}
+
+model CampaignRecipient {
+  id          String    @id @default(cuid())
+  campaignId  String
+  userId      String?
+  email       String
+  status      String    @default("QUEUED")
+  sentAt      DateTime?
+  metadata    Json?
+  createdAt   DateTime  @default(now())
+  campaign    Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([campaignId, status])
+  @@index([userId])
+}
+
+model DiscountRedemption {
+  id             String       @id @default(cuid())
+  discountCodeId String
+  orderId        String
+  userId         String?
+  amount         Decimal      @db.Decimal(12, 2)
+  createdAt      DateTime     @default(now())
+  discountCode   DiscountCode @relation(fields: [discountCodeId], references: [id], onDelete: Cascade)
+  order          Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([discountCodeId])
+  @@index([orderId])
+}
+
+model GiftCard {
+  id           String   @id @default(cuid())
+  code         String   @unique
+  initialValue Decimal  @db.Decimal(12, 2)
+  balance      Decimal  @db.Decimal(12, 2)
+  currency     String   @default("IRR")
+  isActive     Boolean  @default(true)
+  expiresAt    DateTime?
+  metadata     Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([isActive, expiresAt])
+}
+
+model AbandonedCartSnapshot {
+  id          String   @id @default(cuid())
+  cartId      String   @unique
+  email       String?
+  itemCount   Int      @default(0)
+  subtotal    Decimal  @default(0) @db.Decimal(12, 2)
+  status      String   @default("PENDING")
+  lastEventAt DateTime @default(now())
+  recoveredAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  cart        Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+
+  @@index([status, lastEventAt])
 }

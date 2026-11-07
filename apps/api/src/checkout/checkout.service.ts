@@ -2,34 +2,41 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import { PrismaService } from "../prisma/prisma.service";
 import { CartService } from "../cart/cart.service";
 import { SandboxPaymentAdapter } from "../payments/payment.adapter";
+import { DiscountsService } from "../discounts/discounts.service";
 
 function orderNumber() { return `AG-${Date.now().toString(36).toUpperCase()}`; }
 
 @Injectable()
 export class CheckoutService {
-  constructor(private prisma: PrismaService, private cartService: CartService, private payment: SandboxPaymentAdapter) {}
+  constructor(private prisma: PrismaService, private cartService: CartService, private payment: SandboxPaymentAdapter, private discounts: DiscountsService) {}
 
   async createOrder(input: { userId?: string; guestToken?: string; email: string; shippingAddress: Record<string, unknown>; discountCode?: string }) {
     const cart = await this.cartService.getOrCreate(input);
     if (!cart.items.length) throw new BadRequestException("Cart is empty");
     const order = await this.prisma.$transaction(async (tx) => {
-      const fresh = await tx.cart.findUnique({ where: { id: cart.id }, include: { items: { include: { product: true, variant: true } } } });
+      const fresh = await tx.cart.findUnique({ where: { id: cart.id }, include: { discountCode: true, items: { include: { product: true, variant: true } } } });
       if (!fresh?.items.length) throw new BadRequestException("Cart is empty");
       for (const item of fresh.items) {
         const available = item.variant ? item.variant.stockQuantity : item.product.stockQuantity;
         if (item.product.trackInventory && available < item.quantity) throw new BadRequestException(`Insufficient stock for ${item.product.name}`);
       }
       const subtotal = fresh.items.reduce((s, i) => s + Number(i.unitPrice) * i.quantity, 0);
-      const total = subtotal; // discount/shipping/tax adapters can extend here
+      const code = input.discountCode ?? fresh.discountCode?.code;
+      const discount = code ? await this.discounts.resolveActive(code, subtotal, input.userId) : null;
+      const shippingAmount = discount?.freeShipping ? 0 : 0;
+      const discountAmount = discount?.discountAmount ?? 0;
+      const total = Math.max(0, subtotal - discountAmount + shippingAmount);
       const created = await tx.order.create({
         data: {
           number: orderNumber(), userId: input.userId, cartId: fresh.id, email: input.email, status: "AWAITING_PAYMENT", paymentStatus: "PENDING",
-          currency: fresh.currency, subtotal, discountAmount: 0, shippingAmount: 0, taxAmount: 0, total, shippingAddress: input.shippingAddress as any, placedAt: new Date(),
+          currency: fresh.currency, subtotal, discountAmount, shippingAmount, taxAmount: 0, total, discountCodeId: discount?.discountCode.id, shippingAddress: input.shippingAddress as any, placedAt: new Date(),
           items: { create: fresh.items.map((i) => ({ productId: i.productId, variantId: i.variantId, name: i.product.name, sku: i.variant?.sku ?? i.product.sku, variantTitle: i.variant?.title, quantity: i.quantity, unitPrice: i.unitPrice, totalPrice: Number(i.unitPrice) * i.quantity, imageUrl: i.variant?.imageUrl ?? null })) },
-          statusHistory: { create: { toStatus: "AWAITING_PAYMENT", toPayment: "PENDING", note: "Order created from checkout" } },
+          statusHistory: { create: { toStatus: "AWAITING_PAYMENT", toPayment: "PENDING", note: discount ? `Order created with discount ${discount.discountCode.code}` : "Order created from checkout" } },
+          discountRedemptions: discount ? { create: { discountCodeId: discount.discountCode.id, userId: input.userId, amount: discountAmount } } : undefined,
         },
-        include: { items: true },
+        include: { items: true, discountCode: true },
       });
+      if (discount) await tx.discountCode.update({ where: { id: discount.discountCode.id }, data: { usedCount: { increment: 1 } } });
       for (const item of fresh.items) {
         if (!item.product.trackInventory) continue;
         if (item.variantId) await tx.productVariant.update({ where: { id: item.variantId }, data: { stockQuantity: { decrement: item.quantity } } });
@@ -44,6 +51,7 @@ export class CheckoutService {
         }
       }
       await tx.cartItem.deleteMany({ where: { cartId: fresh.id } });
+      await tx.cart.update({ where: { id: fresh.id }, data: { discountCodeId: null } });
       return created;
     });
     const intent = await this.payment.createIntent({ orderId: order.id, amount: Number(order.total), currency: order.currency });
@@ -61,6 +69,7 @@ export class CheckoutService {
       const order = await tx.order.update({ where: { id: payment.orderId }, data: { status: result.status === "PAID" ? "PAID" : "CANCELLED", paymentStatus: result.status } });
       await tx.orderStatusHistory.create({ data: { orderId: order.id, fromStatus: before?.status, toStatus: order.status, fromPayment: before?.paymentStatus, toPayment: order.paymentStatus, note: `Sandbox payment ${result.status}` } });
       if (result.status !== "PAID") {
+        if (before?.discountCodeId) await tx.discountCode.updateMany({ where: { id: before.discountCodeId, usedCount: { gt: 0 } }, data: { usedCount: { decrement: 1 } } });
         const items = await tx.orderItem.findMany({ where: { orderId: payment.orderId } });
         const warehouse = await tx.warehouse.findFirst({ where: { isDefault: true, isActive: true } }) ?? await tx.warehouse.findFirst({ where: { isActive: true } });
         for (const item of items) {
@@ -75,6 +84,6 @@ export class CheckoutService {
         await tx.stockReservation.updateMany({ where: { orderId: payment.orderId }, data: { status: "RELEASED" } });
       }
     });
-    return this.prisma.order.findUnique({ where: { id: payment.orderId }, include: { items: true, payments: true } });
+    return this.prisma.order.findUnique({ where: { id: payment.orderId }, include: { items: true, payments: true, discountCode: true } });
   }
 }

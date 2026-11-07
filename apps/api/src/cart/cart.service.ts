@@ -1,11 +1,12 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
 import { PrismaService } from "../prisma/prisma.service";
+import { DiscountsService } from "../discounts/discounts.service";
 
 @Injectable()
 export class CartService {
-  constructor(private prisma: PrismaService) {}
-  private include = { items: { include: { product: { select: { id: true, name: true, slug: true, basePrice: true, images: { take: 1, orderBy: { sortOrder: "asc" as const } } } }, variant: { select: { id: true, title: true, sku: true, price: true, imageUrl: true } } }, orderBy: { createdAt: "asc" as const } } };
+  constructor(private prisma: PrismaService, private discounts: DiscountsService) {}
+  private include = { discountCode: true, items: { include: { product: { select: { id: true, name: true, slug: true, basePrice: true, images: { take: 1, orderBy: { sortOrder: "asc" as const } } } }, variant: { select: { id: true, title: true, sku: true, price: true, imageUrl: true } } }, orderBy: { createdAt: "asc" as const } } };
 
   async getOrCreate(input: { userId?: string; guestToken?: string }) {
     if (input.userId) {
@@ -46,8 +47,28 @@ export class CartService {
     return this.prisma.cart.findUniqueOrThrow({ where: { id: cart.id }, include: this.include });
   }
 
-  summary(cart: any) {
+  async applyDiscount(input: { userId?: string; guestToken?: string; code: string }) {
+    const cart = await this.getOrCreate(input);
+    const subtotal = cart.items.reduce((s, i) => s + Number(i.unitPrice) * i.quantity, 0);
+    const resolved = await this.discounts.resolveActive(input.code, subtotal, input.userId);
+    await this.prisma.cart.update({ where: { id: cart.id }, data: { discountCodeId: resolved.discountCode.id } });
+    return this.summary(await this.prisma.cart.findUniqueOrThrow({ where: { id: cart.id }, include: this.include }), input.userId);
+  }
+
+  async removeDiscount(input: { userId?: string; guestToken?: string }) {
+    const cart = await this.getOrCreate(input);
+    await this.prisma.cart.update({ where: { id: cart.id }, data: { discountCodeId: null } });
+    return this.summary(await this.prisma.cart.findUniqueOrThrow({ where: { id: cart.id }, include: this.include }), input.userId);
+  }
+
+  async summary(cart: any, userId?: string) {
     const subtotal = cart.items.reduce((s: number, i: any) => s + Number(i.unitPrice) * i.quantity, 0);
-    return { ...cart, summary: { subtotal, discountAmount: 0, shippingAmount: 0, taxAmount: 0, total: subtotal } };
+    let discountAmount = 0; let freeShipping = false; let discountError: string | undefined;
+    if (cart.discountCode) {
+      try { const r = await this.discounts.resolveActive(cart.discountCode.code, subtotal, userId ?? cart.userId ?? undefined); discountAmount = r.discountAmount; freeShipping = r.freeShipping; }
+      catch (e: any) { discountError = e?.message ?? "Discount unavailable"; }
+    }
+    const shippingAmount = freeShipping ? 0 : 0;
+    return { ...cart, summary: { subtotal, discountAmount, shippingAmount, taxAmount: 0, total: Math.max(0, subtotal - discountAmount + shippingAmount), freeShipping, discountError } };
   }
 }
