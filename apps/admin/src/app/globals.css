@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0f141a;
+  --foreground: #e8edf2;
+  --panel: #18212b;
+  --accent: #7dd3fc;
+}
+
+body {
+  background: linear-gradient(180deg, #0b1015, var(--background));
+  color: var(--foreground);
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}

@@ -1,0 +1,38 @@
+# dependencies
+node_modules
+.pnp
+.pnp.*
+
+# outputs
+dist
+build
+.next
+out
+coverage
+.turbo
+
+# env
+.env
+.env.*
+!.env.example
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.idea
+.vscode/*
+!.vscode/extensions.json
+
+# prisma
+packages/db/prisma/dev.db
+packages/db/prisma/dev.db-journal
+
+# misc
+.agent-cache
