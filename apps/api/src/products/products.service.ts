@@ -76,6 +76,7 @@ export class ProductsService {
           seo: dto.seo ? { upsert: { create: dto.seo, update: dto.seo } } : undefined,
         },
       });
+      if (dto.slug && dto.slug !== before.slug) await tx.redirect.upsert({ where: { fromPath: `/products/${before.slug}` }, update: { toPath: `/products/${dto.slug}`, isActive: true, entityType: "Product", entityId: id }, create: { fromPath: `/products/${before.slug}`, toPath: `/products/${dto.slug}`, entityType: "Product", entityId: id } });
       if (dto.variants?.length) await this.replaceVariants(tx, id, dto.variants);
       if (dto.relations?.length) await tx.productRelation.createMany({ data: dto.relations.map((r, i) => ({ fromProductId: id, toProductId: r.toProductId, type: r.type ?? "RELATED", sortOrder: i })) });
       return tx.product.findUniqueOrThrow({ where: { id }, include: this.include });
@@ -132,7 +133,12 @@ export class ProductsService {
   }
 
   async getPublicBySlug(slug: string) {
-    const item = await this.prisma.product.findFirst({ where: { slug, status: "PUBLISHED" }, include: this.include });
+    let item = await this.prisma.product.findFirst({ where: { slug, status: "PUBLISHED" }, include: this.include });
+    if (!item) {
+      const redirect = await this.prisma.redirect.findFirst({ where: { fromPath: `/products/${slug}`, isActive: true } });
+      const target = redirect?.toPath.replace(/^\/products\//, "");
+      if (target) item = await this.prisma.product.findFirst({ where: { slug: target, status: "PUBLISHED" }, include: this.include });
+    }
     if (!item) throw new NotFoundException("Product not found");
     return item;
   }

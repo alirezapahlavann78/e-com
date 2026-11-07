@@ -39,8 +39,18 @@ export class CategoriesService {
   async update(id: string, dto: UpdateCategoryDto, actor: AuthUser) {
     const before = await this.prisma.category.findUnique({ where: { id } });
     if (!before) throw new NotFoundException("Category not found");
-    const item = await this.prisma.category.update({ where: { id }, data: dto });
+    const item = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.category.update({ where: { id }, data: dto });
+      if (dto.slug && dto.slug !== before.slug) await tx.redirect.upsert({ where: { fromPath: `/categories/${before.slug}` }, update: { toPath: `/categories/${dto.slug}`, isActive: true, entityType: "Category", entityId: id }, create: { fromPath: `/categories/${before.slug}`, toPath: `/categories/${dto.slug}`, entityType: "Category", entityId: id } });
+      return updated;
+    });
     await this.audit.log({ actorId: actor.id, actorEmail: actor.email, action: "category.update", entity: "Category", entityId: id, before, after: item });
+    return item;
+  }
+
+  async getPublicBySlug(slug: string) {
+    const item = await this.prisma.category.findFirst({ where: { slug, isActive: true }, include: { children: { where: { isActive: true }, orderBy: { sortOrder: "asc" } }, parent: true } });
+    if (!item) throw new NotFoundException("Category not found");
     return item;
   }
 

@@ -35,6 +35,7 @@ export class CmsService {
     if (!before) throw new NotFoundException("Page not found");
     await this.prisma.$transaction(async (tx) => {
       await tx.page.update({ where: { id }, data: { title: dto.title, slug: dto.slug, type: dto.type, status: dto.status, templateKey: dto.templateKey, scheduledAt: dto.scheduledAt ? new Date(dto.scheduledAt) : dto.scheduledAt === null ? null : undefined, metaTitle: dto.metaTitle, metaDescription: dto.metaDescription } });
+      if (dto.slug && dto.slug !== before.slug) await tx.redirect.upsert({ where: { fromPath: `/pages/${before.slug}` }, update: { toPath: `/pages/${dto.slug}`, isActive: true, entityType: "Page", entityId: id }, create: { fromPath: `/pages/${before.slug}`, toPath: `/pages/${dto.slug}`, entityType: "Page", entityId: id } });
       if (dto.sections) {
         const last = await tx.pageVersion.findFirst({ where: { pageId: id }, orderBy: { version: "desc" } });
         const version = await tx.pageVersion.create({ data: { pageId: id, version: (last?.version ?? 0) + 1, label: "Draft", isPublished: false, sections: { create: dto.sections.map((s, i) => ({ type: s.type, sortOrder: s.sortOrder ?? i, isVisible: s.isVisible ?? true, config: s.config as object })) } } });

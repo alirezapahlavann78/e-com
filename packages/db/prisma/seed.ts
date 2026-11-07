@@ -83,7 +83,7 @@ async function main() {
       actorEmail: admin.email,
       action: "seed.bootstrap",
       entity: "system",
-      entityId: "sprint-4",
+      entityId: "sprint-5",
       after: { adminEmail, permissions: permissions.map(([k]) => k) },
     },
   });
