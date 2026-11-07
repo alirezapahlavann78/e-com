@@ -15,6 +15,8 @@ import { CatalogModule } from "./catalog/catalog.module";
 import { CmsModule } from "./cms/cms.module";
 import { MediaModule } from "./media/media.module";
 import { RedirectsModule } from "./redirects/redirects.module";
+import { CartModule } from "./cart/cart.module";
+import { CheckoutModule } from "./checkout/checkout.module";
 import { JwtAuthGuard } from "./common/guards/jwt-auth.guard";
 import { PermissionsGuard } from "./common/guards/permissions.guard";
 
@@ -34,6 +36,8 @@ import { PermissionsGuard } from "./common/guards/permissions.guard";
     CmsModule,
     MediaModule,
     RedirectsModule,
+    CartModule,
+    CheckoutModule,
   ],
   controllers: [HealthController],
   providers: [
