@@ -25,6 +25,11 @@ enum ProductType {
   VARIABLE
 }
 
+enum ProductRelationType {
+  RELATED
+  COMPLEMENTARY
+}
+
 model User {
   id            String         @id @default(cuid())
   email         String         @unique
@@ -155,29 +160,32 @@ model Category {
 }
 
 model Product {
-  id               String            @id @default(cuid())
-  name             String
-  slug             String            @unique
-  description      String?
-  shortDescription String?
-  type             ProductType       @default(SIMPLE)
-  status           ProductStatus     @default(DRAFT)
-  sku              String?           @unique
-  barcode          String?
-  basePrice        Decimal?          @db.Decimal(12, 2)
-  compareAtPrice   Decimal?          @db.Decimal(12, 2)
-  costPrice        Decimal?          @db.Decimal(12, 2)
-  trackInventory   Boolean           @default(true)
-  stockQuantity    Int               @default(0)
-  lowStockThreshold Int              @default(5)
-  weight           Decimal?          @db.Decimal(12, 3)
-  publishedAt      DateTime?
-  scheduledAt      DateTime?
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  categories       ProductCategory[]
-  images           ProductImage[]
-  seo              ProductSeo?
+  id                String            @id @default(cuid())
+  name              String
+  slug              String            @unique
+  description       String?
+  shortDescription  String?
+  type              ProductType       @default(SIMPLE)
+  status            ProductStatus     @default(DRAFT)
+  sku               String?           @unique
+  barcode           String?
+  basePrice         Decimal?          @db.Decimal(12, 2)
+  compareAtPrice    Decimal?          @db.Decimal(12, 2)
+  costPrice         Decimal?          @db.Decimal(12, 2)
+  trackInventory    Boolean           @default(true)
+  stockQuantity     Int               @default(0)
+  lowStockThreshold Int               @default(5)
+  weight            Decimal?          @db.Decimal(12, 3)
+  publishedAt       DateTime?
+  scheduledAt       DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  categories        ProductCategory[]
+  images            ProductImage[]
+  seo               ProductSeo?
+  variants          ProductVariant[]
+  relationsFrom     ProductRelation[] @relation("ProductRelationFrom")
+  relationsTo       ProductRelation[] @relation("ProductRelationTo")
 
   @@index([status, publishedAt])
   @@index([type])
@@ -208,11 +216,81 @@ model ProductImage {
 }
 
 model ProductSeo {
-  id             String  @id @default(cuid())
-  productId      String  @unique
-  metaTitle      String?
+  id              String  @id @default(cuid())
+  productId       String  @unique
+  metaTitle       String?
   metaDescription String?
-  canonicalUrl   String?
-  noIndex        Boolean @default(false)
-  product        Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  canonicalUrl    String?
+  noIndex         Boolean @default(false)
+  product         Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model Attribute {
+  id        String           @id @default(cuid())
+  name      String
+  slug      String           @unique
+  sortOrder Int              @default(0)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  values    AttributeValue[]
+}
+
+model AttributeValue {
+  id          String                  @id @default(cuid())
+  attributeId String
+  value       String
+  slug        String
+  sortOrder   Int                     @default(0)
+  meta        Json?
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+  attribute   Attribute               @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+  variants    VariantAttributeValue[]
+
+  @@unique([attributeId, slug])
+  @@index([attributeId, sortOrder])
+}
+
+model ProductVariant {
+  id             String                  @id @default(cuid())
+  productId      String
+  sku            String                  @unique
+  barcode        String?
+  title          String?
+  price          Decimal?                @db.Decimal(12, 2)
+  compareAtPrice Decimal?                @db.Decimal(12, 2)
+  costPrice      Decimal?                @db.Decimal(12, 2)
+  stockQuantity  Int                     @default(0)
+  isActive       Boolean                 @default(true)
+  sortOrder      Int                     @default(0)
+  imageUrl       String?
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+  product        Product                 @relation(fields: [productId], references: [id], onDelete: Cascade)
+  attributes     VariantAttributeValue[]
+
+  @@index([productId, isActive])
+}
+
+model VariantAttributeValue {
+  variantId        String
+  attributeValueId String
+  variant          ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  attributeValue   AttributeValue @relation(fields: [attributeValueId], references: [id], onDelete: Cascade)
+
+  @@id([variantId, attributeValueId])
+  @@index([attributeValueId])
+}
+
+model ProductRelation {
+  fromProductId String
+  toProductId   String
+  type          ProductRelationType @default(RELATED)
+  sortOrder     Int                 @default(0)
+  createdAt     DateTime            @default(now())
+  fromProduct   Product             @relation("ProductRelationFrom", fields: [fromProductId], references: [id], onDelete: Cascade)
+  toProduct     Product             @relation("ProductRelationTo", fields: [toProductId], references: [id], onDelete: Cascade)
+
+  @@id([fromProductId, toProductId, type])
+  @@index([toProductId])
 }

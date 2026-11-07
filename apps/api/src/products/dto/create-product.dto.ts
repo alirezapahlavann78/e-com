@@ -16,6 +16,23 @@ export class ProductSeoDto {
   @ApiPropertyOptional() @IsOptional() @IsBoolean() noIndex?: boolean;
 }
 
+export class ProductVariantInputDto {
+  @ApiProperty() @IsString() sku!: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() barcode?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() title?: string;
+  @ApiPropertyOptional() @IsOptional() @IsNumber() price?: number;
+  @ApiPropertyOptional() @IsOptional() @IsNumber() compareAtPrice?: number;
+  @ApiPropertyOptional() @IsOptional() @IsInt() @Min(0) stockQuantity?: number;
+  @ApiPropertyOptional() @IsOptional() @IsBoolean() isActive?: boolean;
+  @ApiPropertyOptional() @IsOptional() @IsString() imageUrl?: string;
+  @ApiPropertyOptional({ type: [String] }) @IsOptional() @IsArray() @IsString({ each: true }) attributeValueIds?: string[];
+}
+
+export class ProductRelationInputDto {
+  @ApiProperty() @IsString() toProductId!: string;
+  @ApiPropertyOptional({ enum: ["RELATED", "COMPLEMENTARY"] }) @IsOptional() @IsEnum(["RELATED", "COMPLEMENTARY"] as const) type?: "RELATED" | "COMPLEMENTARY";
+}
+
 export class CreateProductDto {
   @ApiProperty() @IsString() name!: string;
   @ApiProperty() @IsString() slug!: string;
@@ -32,4 +49,6 @@ export class CreateProductDto {
   @ApiPropertyOptional({ type: [String] }) @IsOptional() @IsArray() @IsString({ each: true }) categoryIds?: string[];
   @ApiPropertyOptional({ type: [ProductImageDto] }) @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => ProductImageDto) images?: ProductImageDto[];
   @ApiPropertyOptional({ type: ProductSeoDto }) @IsOptional() @ValidateNested() @Type(() => ProductSeoDto) seo?: ProductSeoDto;
+  @ApiPropertyOptional({ type: [ProductVariantInputDto] }) @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => ProductVariantInputDto) variants?: ProductVariantInputDto[];
+  @ApiPropertyOptional({ type: [ProductRelationInputDto] }) @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => ProductRelationInputDto) relations?: ProductRelationInputDto[];
 }

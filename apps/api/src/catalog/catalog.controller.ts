@@ -21,9 +21,15 @@ export class CatalogController {
   }
 
   @Get("products")
-  list(@Query("page") page = "1", @Query("limit") limit = "20", @Query("q") q?: string, @Query("category") category?: string) {
-    return this.products.listPublic(Number(page), Number(limit), q, category);
+  list(
+    @Query("page") page = "1", @Query("limit") limit = "20", @Query("q") q?: string, @Query("category") category?: string,
+    @Query("sort") sort?: string, @Query("minPrice") minPrice?: string, @Query("maxPrice") maxPrice?: string, @Query("inStock") inStock?: string,
+  ) {
+    return this.products.listPublic(Number(page), Number(limit), q, category, sort, minPrice ? Number(minPrice) : undefined, maxPrice ? Number(maxPrice) : undefined, inStock === "true");
   }
+
+  @Get("search/autocomplete")
+  autocomplete(@Query("q") q = "", @Query("limit") limit = "8") { return this.products.autocomplete(q, Number(limit)); }
 
   @Get("products/:slug")
   detail(@Param("slug") slug: string) { return this.products.getPublicBySlug(slug); }

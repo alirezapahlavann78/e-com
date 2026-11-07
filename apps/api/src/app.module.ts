@@ -8,6 +8,7 @@ import { UsersModule } from "./users/users.module";
 import { RbacModule } from "./rbac/rbac.module";
 import { AuditModule } from "./audit/audit.module";
 import { SettingsModule } from "./settings/settings.module";
+import { AttributesModule } from "./attributes/attributes.module";
 import { CategoriesModule } from "./categories/categories.module";
 import { ProductsModule } from "./products/products.module";
 import { CatalogModule } from "./catalog/catalog.module";
@@ -23,6 +24,7 @@ import { PermissionsGuard } from "./common/guards/permissions.guard";
     UsersModule,
     RbacModule,
     SettingsModule,
+    AttributesModule,
     CategoriesModule,
     ProductsModule,
     CatalogModule,
