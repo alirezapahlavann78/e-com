@@ -17,13 +17,15 @@ const permissions = [
   ["settings:read", "Read store settings"],
   ["settings:write", "Write store settings"],
   ["audit:read", "Read audit logs"],
+  ["catalog:read", "Read catalog data in admin"],
+  ["catalog:write", "Manage catalog data"],
 ] as const;
 
 async function main() {
   await prisma.storeSetting.upsert({
     where: { key: "store.bootstrap" },
-    update: { value: { ok: true, sprint: 1 } },
-    create: { key: "store.bootstrap", value: { ok: true, sprint: 1 } },
+    update: { value: { ok: true, sprint: 2 } },
+    create: { key: "store.bootstrap", value: { ok: true, sprint: 2 } },
   });
 
   for (const [key, description] of permissions) {

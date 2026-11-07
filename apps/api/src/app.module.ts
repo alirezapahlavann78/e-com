@@ -8,6 +8,9 @@ import { UsersModule } from "./users/users.module";
 import { RbacModule } from "./rbac/rbac.module";
 import { AuditModule } from "./audit/audit.module";
 import { SettingsModule } from "./settings/settings.module";
+import { CategoriesModule } from "./categories/categories.module";
+import { ProductsModule } from "./products/products.module";
+import { CatalogModule } from "./catalog/catalog.module";
 import { JwtAuthGuard } from "./common/guards/jwt-auth.guard";
 import { PermissionsGuard } from "./common/guards/permissions.guard";
 
@@ -20,6 +23,9 @@ import { PermissionsGuard } from "./common/guards/permissions.guard";
     UsersModule,
     RbacModule,
     SettingsModule,
+    CategoriesModule,
+    ProductsModule,
+    CatalogModule,
   ],
   controllers: [HealthController],
   providers: [
