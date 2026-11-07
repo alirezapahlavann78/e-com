@@ -79,6 +79,23 @@ enum PaymentProvider {
   ZARINPAL
 }
 
+enum StockMovementType {
+  IN
+  OUT
+  ADJUST
+  TRANSFER
+  RESERVE
+  RELEASE
+  COMMIT
+}
+
+enum StockReservationStatus {
+  ACTIVE
+  COMMITTED
+  RELEASED
+  EXPIRED
+}
+
 model User {
   id            String         @id @default(cuid())
   email         String         @unique
@@ -240,6 +257,9 @@ model Product {
   relationsTo       ProductRelation[] @relation("ProductRelationTo")
   cartItems         CartItem[]
   orderItems        OrderItem[]
+  inventoryItems    InventoryItem[]
+  stockMovements    StockMovement[]
+  stockReservations StockReservation[]
 
   @@index([status, publishedAt])
   @@index([type])
@@ -324,6 +344,9 @@ model ProductVariant {
   attributes     VariantAttributeValue[]
   cartItems      CartItem[]
   orderItems     OrderItem[]
+  inventoryItems InventoryItem[]
+  stockMovements StockMovement[]
+  stockReservations StockReservation[]
 
   @@index([productId, isActive])
 }
@@ -568,6 +591,8 @@ model Order {
   discountCode      DiscountCode?   @relation(fields: [discountCodeId], references: [id], onDelete: SetNull)
   items             OrderItem[]
   payments          Payment[]
+  stockMovements    StockMovement[]
+  stockReservations StockReservation[]
 
   @@index([userId, createdAt])
   @@index([status, paymentStatus])
@@ -611,4 +636,92 @@ model Payment {
 
   @@index([orderId, status])
   @@index([reference])
+}
+
+model Warehouse {
+  id         String          @id @default(cuid())
+  name       String
+  code       String          @unique
+  isDefault  Boolean         @default(false)
+  isActive   Boolean         @default(true)
+  address    Json?
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  items      InventoryItem[]
+  movements  StockMovement[]
+  reservations StockReservation[]
+}
+
+model InventoryItem {
+  id            String          @id @default(cuid())
+  warehouseId   String
+  productId     String
+  variantId     String?
+  quantity      Int             @default(0)
+  reserved      Int             @default(0)
+  lowStock      Int             @default(5)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  warehouse     Warehouse       @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  product       Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant       ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@unique([warehouseId, productId, variantId])
+  @@index([productId, variantId])
+}
+
+model StockMovement {
+  id          String            @id @default(cuid())
+  warehouseId String
+  productId   String
+  variantId   String?
+  orderId     String?
+  type        StockMovementType
+  quantity    Int
+  reference   String?
+  note        String?
+  actorId     String?
+  createdAt   DateTime          @default(now())
+  warehouse   Warehouse         @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  product     Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant     ProductVariant?   @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  order       Order?            @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([warehouseId, createdAt])
+  @@index([productId, variantId])
+  @@index([orderId])
+}
+
+model StockReservation {
+  id          String                 @id @default(cuid())
+  warehouseId String
+  productId   String
+  variantId   String?
+  orderId     String?
+  cartId      String?
+  quantity    Int
+  status      StockReservationStatus @default(ACTIVE)
+  expiresAt   DateTime
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+  warehouse   Warehouse              @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  product     Product                @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant     ProductVariant?        @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  order       Order?                 @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([status, expiresAt])
+  @@index([productId, variantId])
+  @@index([orderId])
+}
+
+model Supplier {
+  id        String   @id @default(cuid())
+  name      String
+  code      String?  @unique
+  email     String?
+  phone     String?
+  notes     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

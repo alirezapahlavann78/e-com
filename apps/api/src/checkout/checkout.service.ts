@@ -33,6 +33,14 @@ export class CheckoutService {
         if (!item.product.trackInventory) continue;
         if (item.variantId) await tx.productVariant.update({ where: { id: item.variantId }, data: { stockQuantity: { decrement: item.quantity } } });
         else await tx.product.update({ where: { id: item.productId }, data: { stockQuantity: { decrement: item.quantity } } });
+        const warehouse = await tx.warehouse.findFirst({ where: { isDefault: true, isActive: true } }) ?? await tx.warehouse.findFirst({ where: { isActive: true } });
+        if (warehouse) {
+          let inv = await tx.inventoryItem.findFirst({ where: { warehouseId: warehouse.id, productId: item.productId, variantId: item.variantId ?? null } });
+          if (!inv) inv = await tx.inventoryItem.create({ data: { warehouseId: warehouse.id, productId: item.productId, variantId: item.variantId ?? null, quantity: Math.max(0, (item.variant ? item.variant.stockQuantity : item.product.stockQuantity) - item.quantity), lowStock: item.product.lowStockThreshold ?? 5 } });
+          else await tx.inventoryItem.update({ where: { id: inv.id }, data: { quantity: { decrement: item.quantity } } });
+          await tx.stockReservation.create({ data: { warehouseId: warehouse.id, productId: item.productId, variantId: item.variantId ?? null, orderId: created.id, cartId: fresh.id, quantity: item.quantity, status: "COMMITTED", expiresAt: new Date(Date.now() + 30 * 60_000) } });
+          await tx.stockMovement.create({ data: { warehouseId: warehouse.id, productId: item.productId, variantId: item.variantId ?? null, orderId: created.id, type: "COMMIT", quantity: item.quantity, reference: created.number, note: "Checkout commit" } });
+        }
       }
       await tx.cartItem.deleteMany({ where: { cartId: fresh.id } });
       return created;
@@ -46,10 +54,24 @@ export class CheckoutService {
     const payment = await this.prisma.payment.findFirst({ where: { reference }, include: { order: true } });
     if (!payment) throw new NotFoundException("Payment not found");
     const result = await this.payment.verify({ reference, authority: payment.authority ?? undefined });
-    await this.prisma.$transaction([
-      this.prisma.payment.update({ where: { id: payment.id }, data: { status: result.status, rawResponse: result.raw as any, paidAt: result.status === "PAID" ? new Date() : null } }),
-      this.prisma.order.update({ where: { id: payment.orderId }, data: { status: result.status === "PAID" ? "PAID" : "CANCELLED", paymentStatus: result.status } }),
-    ]);
+    await this.prisma.$transaction(async (tx) => {
+      await tx.payment.update({ where: { id: payment.id }, data: { status: result.status, rawResponse: result.raw as any, paidAt: result.status === "PAID" ? new Date() : null } });
+      await tx.order.update({ where: { id: payment.orderId }, data: { status: result.status === "PAID" ? "PAID" : "CANCELLED", paymentStatus: result.status } });
+      if (result.status !== "PAID") {
+        const items = await tx.orderItem.findMany({ where: { orderId: payment.orderId } });
+        const warehouse = await tx.warehouse.findFirst({ where: { isDefault: true, isActive: true } }) ?? await tx.warehouse.findFirst({ where: { isActive: true } });
+        for (const item of items) {
+          if (item.variantId) await tx.productVariant.updateMany({ where: { id: item.variantId }, data: { stockQuantity: { increment: item.quantity } } });
+          else if (item.productId) await tx.product.updateMany({ where: { id: item.productId }, data: { stockQuantity: { increment: item.quantity } } });
+          if (warehouse && item.productId) {
+            const inv = await tx.inventoryItem.findFirst({ where: { warehouseId: warehouse.id, productId: item.productId, variantId: item.variantId ?? null } });
+            if (inv) await tx.inventoryItem.update({ where: { id: inv.id }, data: { quantity: { increment: item.quantity } } });
+            await tx.stockMovement.create({ data: { warehouseId: warehouse.id, productId: item.productId, variantId: item.variantId ?? null, orderId: payment.orderId, type: "RELEASE", quantity: item.quantity, reference, note: "Payment failed/cancelled release" } });
+          }
+        }
+        await tx.stockReservation.updateMany({ where: { orderId: payment.orderId }, data: { status: "RELEASED" } });
+      }
+    });
     return this.prisma.order.findUnique({ where: { id: payment.orderId }, include: { items: true, payments: true } });
   }
 }

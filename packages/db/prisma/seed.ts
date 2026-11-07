@@ -23,13 +23,15 @@ const permissions = [
   ["cms:write", "Manage CMS/pages"],
   ["media:read", "Read media assets"],
   ["media:write", "Manage media assets"],
+  ["inventory:read", "Read inventory/warehouses/stock"],
+  ["inventory:write", "Manage inventory/warehouses/stock"],
 ] as const;
 
 async function main() {
   await prisma.storeSetting.upsert({
     where: { key: "store.bootstrap" },
-    update: { value: { ok: true, sprint: 6 } },
-    create: { key: "store.bootstrap", value: { ok: true, sprint: 6 } },
+    update: { value: { ok: true, sprint: 7 } },
+    create: { key: "store.bootstrap", value: { ok: true, sprint: 7 } },
   });
 
   for (const [key, description] of permissions) {
@@ -83,7 +85,7 @@ async function main() {
       actorEmail: admin.email,
       action: "seed.bootstrap",
       entity: "system",
-      entityId: "sprint-6",
+      entityId: "sprint-7",
       after: { adminEmail, permissions: permissions.map(([k]) => k) },
     },
   });
@@ -108,6 +110,9 @@ async function main() {
   for (const [slug, value, sortOrder] of [["s", "S", 1], ["m", "M", 2], ["l", "L", 3], ["xl", "XL", 4]] as const) {
     await prisma.attributeValue.upsert({ where: { attributeId_slug: { attributeId: size.id, slug } }, update: { value, sortOrder }, create: { attributeId: size.id, slug, value, sortOrder } });
   }
+
+  await prisma.warehouse.upsert({ where: { code: "MAIN" }, update: { name: "Main Warehouse", isDefault: true, isActive: true }, create: { code: "MAIN", name: "Main Warehouse", isDefault: true, isActive: true } });
+  await prisma.supplier.upsert({ where: { code: "SUP-DEFAULT" }, update: { name: "Default Supplier", isActive: true }, create: { code: "SUP-DEFAULT", name: "Default Supplier", isActive: true } });
 }
 
 main()

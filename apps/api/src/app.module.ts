@@ -17,6 +17,7 @@ import { MediaModule } from "./media/media.module";
 import { RedirectsModule } from "./redirects/redirects.module";
 import { CartModule } from "./cart/cart.module";
 import { CheckoutModule } from "./checkout/checkout.module";
+import { InventoryModule } from "./inventory/inventory.module";
 import { JwtAuthGuard } from "./common/guards/jwt-auth.guard";
 import { PermissionsGuard } from "./common/guards/permissions.guard";
 
@@ -38,6 +39,7 @@ import { PermissionsGuard } from "./common/guards/permissions.guard";
     RedirectsModule,
     CartModule,
     CheckoutModule,
+    InventoryModule,
   ],
   controllers: [HealthController],
   providers: [
