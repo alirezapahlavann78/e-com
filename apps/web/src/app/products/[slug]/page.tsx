@@ -1,7 +1,8 @@
 import { api } from "../../../lib/api";
 import { AddToCartButton } from "./add-to-cart";
+import { ProductReviews, WishlistButton } from "./reviews-wishlist";
 
-type Product = { id: string; name: string; description?: string | null; basePrice: string | number | null; images?: { url: string; alt?: string | null }[]; variants?: { id: string; sku: string; title?: string | null; price: string | number | null; stockQuantity: number; attributes?: { attributeValue: { value: string; attribute: { name: string } } }[] }[]; relationsFrom?: { type: string; toProduct: { id: string; name: string; slug: string; basePrice: string | number | null } }[]; seo?: { metaTitle?: string | null; metaDescription?: string | null } };
+type Product = { id: string; name: string; slug: string; description?: string | null; basePrice: string | number | null; images?: { url: string; alt?: string | null }[]; variants?: { id: string; sku: string; title?: string | null; price: string | number | null; stockQuantity: number; attributes?: { attributeValue: { value: string; attribute: { name: string } } }[] }[]; relationsFrom?: { type: string; toProduct: { id: string; name: string; slug: string; basePrice: string | number | null } }[]; seo?: { metaTitle?: string | null; metaDescription?: string | null } };
 
 export default async function ProductDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -15,6 +16,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           <h1 className="text-4xl font-semibold">{p.name}</h1>
           <p className="mt-4 text-2xl text-[var(--accent)]">{p.basePrice != null ? `${p.basePrice} تومان` : "انتخاب واریانت"}</p>
           <AddToCartButton productId={p.id} />
+          <WishlistButton productId={p.id} />
           {p.description ? <div className="mt-6 whitespace-pre-wrap leading-8 text-stone-700">{p.description}</div> : null}
           {p.variants?.length ? (
             <section className="mt-8">
@@ -29,6 +31,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           ) : null}
         </div>
       </div>
+      <ProductReviews slug={p.slug ?? slug} />
     </main>
   );
 }

@@ -20,6 +20,9 @@ import { CheckoutModule } from "./checkout/checkout.module";
 import { InventoryModule } from "./inventory/inventory.module";
 import { OrdersModule } from "./orders/orders.module";
 import { DiscountsModule } from "./discounts/discounts.module";
+import { CrmModule } from "./crm/crm.module";
+import { ReviewsModule } from "./reviews/reviews.module";
+import { WishlistModule } from "./wishlist/wishlist.module";
 import { JwtAuthGuard } from "./common/guards/jwt-auth.guard";
 import { PermissionsGuard } from "./common/guards/permissions.guard";
 
@@ -44,6 +47,9 @@ import { PermissionsGuard } from "./common/guards/permissions.guard";
     CheckoutModule,
     InventoryModule,
     OrdersModule,
+    CrmModule,
+    ReviewsModule,
+    WishlistModule,
   ],
   controllers: [HealthController],
   providers: [
