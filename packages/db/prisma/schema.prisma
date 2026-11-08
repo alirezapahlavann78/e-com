@@ -167,11 +167,14 @@ model User {
   status        UserStatus     @default(ACTIVE)
   isAdmin       Boolean        @default(false)
   emailVerified DateTime?
+  failedLoginAttempts Int      @default(0)
+  lockoutUntil        DateTime?
   lastLoginAt   DateTime?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   roles         UserRole[]
   refreshTokens RefreshToken[]
+  verificationTokens EmailVerificationToken[]
   auditLogs     AuditLog[]     @relation("AuditActor")
   carts         Cart[]
   addresses     CustomerAddress[]
@@ -1126,4 +1129,16 @@ model AbandonedCartSnapshot {
   cart        Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
 
   @@index([status, lastEventAt])
+}
+model EmailVerificationToken {
+  id         String   @id @default(cuid())
+  userId     String
+  tokenHash  String   @unique
+  purpose    String   @default("EMAIL_VERIFY")
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose, expiresAt])
 }

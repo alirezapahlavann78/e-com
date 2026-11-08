@@ -25,6 +25,7 @@ import { ReviewsModule } from "./reviews/reviews.module";
 import { WishlistModule } from "./wishlist/wishlist.module";
 import { JwtAuthGuard } from "./common/guards/jwt-auth.guard";
 import { PermissionsGuard } from "./common/guards/permissions.guard";
+import { RateLimitGuard } from "./common/guards/rate-limit.guard";
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { PermissionsGuard } from "./common/guards/permissions.guard";
   ],
   controllers: [HealthController],
   providers: [
+    { provide: APP_GUARD, useClass: RateLimitGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: PermissionsGuard },
   ],
