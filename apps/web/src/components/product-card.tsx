@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { formatPrice } from "../lib/format";
+import { CompareButton } from "./compare-store";
 import { QuickAdd } from "./quick-add";
 
 export type ProductCardData = {
@@ -72,6 +73,18 @@ export function ProductCard({ product, priority }: { product: ProductCardData; p
             {onSale ? (
               <span className="text-[11px] text-[var(--muted)] line-through">{formatPrice(product.compareAtPrice)}</span>
             ) : null}
+          </div>
+          <div className="mt-2">
+            <CompareButton
+              item={{
+                id: product.id,
+                slug: product.slug,
+                name: product.name,
+                brand: product.brand,
+                image: primary ?? null,
+                price: price ?? null,
+              }}
+            />
           </div>
         </div>
         <QuickAdd

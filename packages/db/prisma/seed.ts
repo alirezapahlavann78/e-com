@@ -254,6 +254,11 @@ const products: ProductSeed[] = [
 ];
 
 const colorValues = ["مشکی", "سفید", "سرمه‌ای", "کرم", "شکلاتی", "زمردی", "زیتونی", "خاکی", "قهوه‌ای", "شیری", "آبی روشن", "طرح‌دار"];
+const colorHex: Record<string, string> = {
+  "مشکی": "#1b1b1b", "سفید": "#f6f3ee", "سرمه‌ای": "#1f2a44", "کرم": "#e6d8c3", "شکلاتی": "#4a332a",
+  "زمردی": "#2f5d4f", "زیتونی": "#6b6b3a", "خاکی": "#b6a68c", "قهوه‌ای": "#6a4a35", "شیری": "#f0e7da",
+  "آبی روشن": "#a8c3d6", "طرح‌دار": "#c9b7a1",
+};
 
 async function seedUsers() {
   const adminEmail = process.env.ADMIN_BOOTSTRAP_EMAIL ?? "admin@aghaci.local";
@@ -365,8 +370,8 @@ async function seedCatalog() {
   for (const [index, value] of colorValues.entries()) {
     await prisma.attributeValue.upsert({
       where: { attributeId_slug: { attributeId: color.id, slug: `color-${index}` } },
-      update: { value },
-      create: { attributeId: color.id, slug: `color-${index}`, value, sortOrder: index, meta: { hex: "#" + (0x111111 + index * 0x101010).toString(16).padStart(6, "0").slice(0, 6) } },
+      update: { value, meta: { hex: colorHex[value] } },
+      create: { attributeId: color.id, slug: `color-${index}`, value, sortOrder: index, meta: { hex: colorHex[value] } },
     });
   }
 
@@ -385,6 +390,8 @@ async function seedCatalog() {
   }
   const sizeRows = await prisma.attributeValue.findMany({ where: { attributeId: size.id } });
   const sizeMap = new Map(sizeRows.map((row) => [row.value, row.id]));
+  const colorRows = await prisma.attributeValue.findMany({ where: { attributeId: color.id } });
+  const colorMap = new Map(colorRows.map((row) => [row.value, row.id]));
 
   // Categories
   const categoryIds = new Map<string, string>();
@@ -473,9 +480,12 @@ async function seedCatalog() {
             isActive: true,
             sortOrder: variantIndex,
             imageUrl: item.image,
-            attributes: sizeMap.has(value)
-              ? { create: [{ attributeValueId: sizeMap.get(value)! }] }
-              : undefined,
+            attributes: {
+              create: [
+                ...(sizeMap.has(value) ? [{ attributeValueId: sizeMap.get(value)! }] : []),
+                ...(colorMap.has(item.color) ? [{ attributeValueId: colorMap.get(item.color)! }] : []),
+              ],
+            },
           })),
         },
       },
@@ -492,6 +502,18 @@ async function seedCatalog() {
           create: { warehouseId: mainWarehouse.id, productId: product.id, variantId: variant.id, quantity: variant.stockQuantity, lowStock: 5 },
         });
       }
+    }
+  }
+
+  // Backfill colour attributes for catalogues seeded before sprint 16.
+  const catalogProducts = await prisma.product.findMany({ select: { slug: true, variants: { select: { id: true, attributes: { select: { attributeValue: { select: { attributeId: true } } } } } } } });
+  const colorBySlug = new Map(products.map((item) => [item.slug, item.color]));
+  for (const entry of catalogProducts) {
+    const colorValueId = colorMap.get(colorBySlug.get(entry.slug) ?? "");
+    if (!colorValueId) continue;
+    for (const variant of entry.variants) {
+      if (variant.attributes.some((link) => link.attributeValue.attributeId === color.id)) continue;
+      await prisma.variantAttributeValue.create({ data: { variantId: variant.id, attributeValueId: colorValueId } }).catch(() => null);
     }
   }
 

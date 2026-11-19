@@ -45,7 +45,7 @@ export class CheckoutService {
           number: orderNumber(), userId: input.userId, cartId: fresh.id, email: input.email, status: "AWAITING_PAYMENT", paymentStatus: "PENDING",
           currency: fresh.currency, subtotal, discountAmount, shippingAmount, taxAmount: 0, total, discountCodeId: discount?.discountCode.id,
           shippingAddress: { ...input.shippingAddress, shippingMethod: input.shippingMethod ?? "standard" } as any,
-          customerNote: input.customerNote, placedAt: new Date(),
+          customerNote: input.customerNote, giftWrap: fresh.giftWrap, giftNote: fresh.giftNote, placedAt: new Date(),
           items: { create: fresh.items.map((i) => ({ productId: i.productId, variantId: i.variantId, name: i.product.name, sku: i.variant?.sku ?? i.product.sku, variantTitle: i.variant?.title, quantity: i.quantity, unitPrice: i.unitPrice, totalPrice: Number(i.unitPrice) * i.quantity, imageUrl: i.variant?.imageUrl ?? null })) },
           statusHistory: { create: { toStatus: "AWAITING_PAYMENT", toPayment: "PENDING", note: discount ? `Order created with discount ${discount.discountCode.code}` : "Order created from checkout" } },
           discountRedemptions: discount ? { create: { discountCodeId: discount.discountCode.id, userId: input.userId, amount: discountAmount } } : undefined,

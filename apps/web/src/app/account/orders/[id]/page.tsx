@@ -70,6 +70,18 @@ export default function MyOrderPage() {
         </div>
       </section>
 
+      {order.giftWrap ? (
+        <section className="mt-6 rounded-2xl border border-[var(--accent)]/40 bg-[var(--accent-soft)]/15 p-6">
+          <h2 className="flex items-center gap-2 font-medium">🎁 بسته‌بندی هدیه</h2>
+          <p className="mt-2 text-sm text-[var(--muted)]">این سفارش در جعبه هدیه آگاهی ارسال می‌شود.</p>
+          {order.giftNote ? (
+            <p className="mt-3 rounded-xl border border-dashed border-[var(--line)] bg-white/70 p-3 text-sm leading-7">
+              «{order.giftNote}»
+            </p>
+          ) : null}
+        </section>
+      ) : null}
+
       {order.shipments?.length ? (
         <section className="mt-6 rounded-2xl border border-[var(--line)] bg-[var(--panel)] p-6">
           <h2 className="font-medium">ارسال</h2>

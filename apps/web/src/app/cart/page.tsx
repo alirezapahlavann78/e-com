@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import { guestFetch, notifyCartChanged, useCart, type Cart } from "../../components/cart-store";
+import { guestFetch, notifyCartChanged, saveGiftOptions, useCart, type Cart } from "../../components/cart-store";
 import { formatPrice } from "../../lib/format";
 
 export default function CartPage() {
@@ -11,10 +11,34 @@ export default function CartPage() {
   const [code, setCode] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [giftWrap, setGiftWrap] = useState(false);
+  const [giftNote, setGiftNote] = useState("");
+  const [giftStatus, setGiftStatus] = useState("");
 
   const items = (cart as Cart | null)?.items ?? [];
   const summary = (cart as any)?.summary ?? { subtotal: 0, discountAmount: 0, shippingAmount: 0, total: 0 };
   const discount = (cart as any)?.discountCode;
+
+  useEffect(() => {
+    const current = cart as Cart | null;
+    if (!current) return;
+    setGiftWrap(Boolean(current.giftWrap));
+    setGiftNote(current.giftNote ?? "");
+  }, [cart]);
+
+  async function persistGift(nextWrap: boolean, nextNote: string) {
+    setBusy(true);
+    setGiftStatus("");
+    try {
+      await saveGiftOptions(nextWrap, nextNote);
+      await reload();
+      setGiftStatus(nextWrap ? "انتخاب هدیه ذخیره شد." : "بسته‌بندی هدیه حذف شد.");
+    } catch (error) {
+      setGiftStatus(error instanceof Error ? error.message : "ذخیره نشد");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function changeQuantity(itemId: string, quantity: number) {
     if (quantity < 1) return;
@@ -142,6 +166,63 @@ export default function CartPage() {
           ))}
         </div>
 
+        <div className="mt-4">
+          <div className="rounded-2xl border border-[var(--line)] bg-[var(--panel)] p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="flex items-center gap-2 text-sm font-bold">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M4 9h16v11H4zM4 9l2.5-4h11L20 9M12 5v15" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+                  </svg>
+                  بسته‌بندی هدیه
+                </p>
+                <p className="mt-1 text-[11px] leading-5 text-[var(--muted)]">
+                  جعبه‌ی پارچه‌ای آگاهی با روبان ابریشمی و کارت دست‌نویس — رایگان.
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={giftWrap}
+                aria-label="فعال‌سازی بسته‌بندی هدیه"
+                disabled={busy}
+                onClick={() => {
+                  const next = !giftWrap;
+                  setGiftWrap(next);
+                  void persistGift(next, giftNote);
+                }}
+                className={`relative h-6 w-11 shrink-0 rounded-full transition ${giftWrap ? "bg-[var(--accent)]" : "bg-[var(--line)]"}`}
+              >
+                <span
+                  className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${giftWrap ? "right-[22px]" : "right-0.5"}`}
+                />
+              </button>
+            </div>
+
+            {giftWrap ? (
+              <div className="mt-4">
+                <label className="field-label" htmlFor="gift-note">متن کارت هدیه (اختیاری)</label>
+                <textarea
+                  id="gift-note"
+                  rows={3}
+                  maxLength={240}
+                  value={giftNote}
+                  onChange={(event) => setGiftNote(event.target.value)}
+                  placeholder="مثلاً: تولدت مبارک، امیدوارم خوشت بیاد…"
+                  className="field mt-2 resize-none text-[12.5px] leading-6"
+                />
+                <div className="mt-2 flex items-center justify-between">
+                  <span className="text-[10.5px] text-[var(--muted)]">{giftNote.length.toLocaleString("fa-IR")} از ۲۴۰</span>
+                  <button type="button" disabled={busy} onClick={() => void persistGift(true, giftNote)} className="btn btn-outline px-4 py-1.5 text-[11px]">
+                    ذخیره متن
+                  </button>
+                </div>
+              </div>
+            ) : null}
+            {giftStatus ? <p className="mt-2 text-[11px] text-[var(--accent-strong)]">{giftStatus}</p> : null}
+          </div>
+        </div>
+
         <aside className="lg:sticky lg:top-24 lg:h-fit">
           <div className="card p-6">
             <h2 className="text-sm font-bold">خلاصه سفارش</h2>
@@ -155,6 +236,12 @@ export default function CartPage() {
                 <div className="flex justify-between text-[var(--success)]">
                   <span>تخفیف {discount?.code ? `(${discount.code})` : ""}</span>
                   <span>−{formatPrice(summary.discountAmount)}</span>
+                </div>
+              ) : null}
+              {(cart as Cart | null)?.giftWrap ? (
+                <div className="flex justify-between text-[var(--accent-strong)]">
+                  <span>بسته‌بندی هدیه</span>
+                  <span>رایگان</span>
                 </div>
               ) : null}
               <div className="flex justify-between text-[var(--muted)]">

@@ -6,6 +6,7 @@ import { api } from "../../../lib/api";
 import { ProductCard, type ProductCardData } from "../../../components/product-card";
 import { ProductPurchase, type PurchaseProduct } from "./product-purchase";
 import { ProductReviews, WishlistButton } from "./reviews-wishlist";
+import { RecentlyViewedRail, TrackRecentlyViewed } from "../../../components/recently-viewed";
 
 type Product = PurchaseProduct & {
   relationsFrom?: { type: string; toProduct: ProductCardData }[];
@@ -57,6 +58,17 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         ) : null}
       </nav>
 
+      <TrackRecentlyViewed
+        item={{
+          id: product.id,
+          slug: product.slug,
+          name: product.name,
+          brand: product.brand,
+          image: product.images?.[0]?.url ?? null,
+          price: product.basePrice != null ? Number(product.basePrice) : null,
+        }}
+      />
+
       <div className="mt-6">
         <ProductPurchase
           product={product}
@@ -91,6 +103,8 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           </div>
         </section>
       ) : null}
+
+      <RecentlyViewedRail excludeSlug={product.slug} />
     </div>
   );
 }

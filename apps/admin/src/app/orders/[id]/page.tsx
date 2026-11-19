@@ -17,7 +17,7 @@ interface ReturnRequest { id: string; status: string; reason: string; customerNo
 interface Order {
   id: string; number: string; email: string; status: string; paymentStatus: string; currency: string;
   subtotal: string; discountAmount: string; shippingAmount: string; taxAmount: string; total: string;
-  shippingAddress?: unknown; billingAddress?: unknown; customerNote?: string | null;
+  shippingAddress?: unknown; billingAddress?: unknown; customerNote?: string | null; giftWrap?: boolean; giftNote?: string | null;
   createdAt: string; placedAt?: string | null;
   items: OrderItem[]; payments: Payment[]; statusHistory: StatusHistory[]; notes: Note[];
   shipments: Shipment[]; invoices: Invoice[]; returnRequests: ReturnRequest[]; refunds: Refund[];
@@ -165,6 +165,8 @@ export default function OrderDetailPage() {
             <Row label="تاریخ ثبت" value={dateTime(order.createdAt)} />
             <Row label="تاریخ سفارش" value={dateTime(order.placedAt)} />
             {order.customerNote && <Row label="یادداشت مشتری" value={order.customerNote} />}
+            <Row label="بسته‌بندی هدیه" value={order.giftWrap ? "بله" : "خیر"} />
+            {order.giftWrap && order.giftNote ? <Row label="متن کارت هدیه" value={order.giftNote} /> : null}
             {order.payments.length > 0 && (
               <div className="pt-2">
                 <p className="mb-2 font-semibold">پرداخت‌ها</p>

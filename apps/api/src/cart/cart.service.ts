@@ -20,6 +20,13 @@ export class CartService {
     return this.prisma.cart.create({ data: { guestToken: token }, include: this.include });
   }
 
+  async setGift(input: { userId?: string; guestToken?: string; giftWrap: boolean; giftNote?: string }) {
+    const cart = await this.getOrCreate(input);
+    const note = input.giftNote?.trim().slice(0, 240) || null;
+    await this.prisma.cart.update({ where: { id: cart.id }, data: { giftWrap: input.giftWrap, giftNote: input.giftWrap ? note : null } });
+    return this.summary(await this.getOrCreate(input), input.userId);
+  }
+
   async addItem(input: { userId?: string; guestToken?: string; productId: string; variantId?: string; quantity: number }) {
     const cart = await this.getOrCreate(input);
     const product = await this.prisma.product.findUnique({ where: { id: input.productId }, include: { variants: true } });

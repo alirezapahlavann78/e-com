@@ -3,7 +3,7 @@ import { ApiTags } from "@nestjs/swagger";
 import { Public } from "../common/decorators/public.decorator";
 import { CurrentUser, type AuthUser } from "../common/decorators/current-user.decorator";
 import { CartService } from "./cart.service";
-import { AddCartItemDto, UpdateCartItemDto } from "./dto/cart.dto";
+import { AddCartItemDto, GiftOptionsDto, UpdateCartItemDto } from "./dto/cart.dto";
 
 @ApiTags("cart")
 @Controller("cart")
@@ -22,6 +22,9 @@ export class CartController {
 
   @Public() @Delete("items/:id")
   async remove(@Param("id") id: string, @CurrentUser() user: AuthUser | undefined, @Query("guestToken") guestToken?: string) { return this.cart.summary(await this.cart.removeItem({ ...this.id(user, guestToken), itemId: id }), user?.id); }
+
+  @Public() @Patch("gift")
+  async gift(@Body() dto: GiftOptionsDto, @CurrentUser() user: AuthUser | undefined, @Query("guestToken") guestToken?: string) { return this.cart.setGift({ ...this.id(user, guestToken), giftWrap: dto.giftWrap, giftNote: dto.giftNote }); }
 
   @Public() @Post("discount")
   async applyDiscount(@Body() body: { code: string }, @CurrentUser() user: AuthUser | undefined, @Query("guestToken") guestToken?: string) { return this.cart.applyDiscount({ ...this.id(user, guestToken), code: body.code }); }

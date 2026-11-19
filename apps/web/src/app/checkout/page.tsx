@@ -283,6 +283,12 @@ export default function CheckoutPage() {
                   <span>−{formatPrice(summary.discountAmount)}</span>
                 </div>
               ) : null}
+              {(cart as any)?.giftWrap ? (
+                <div className="flex justify-between text-[var(--accent-strong)]">
+                  <span>بسته‌بندی هدیه</span>
+                  <span>رایگان</span>
+                </div>
+              ) : null}
               <div className="flex justify-between text-[var(--muted)]">
                 <span>ارسال</span>
                 <span>{shipping === 0 ? "رایگان" : formatPrice(shipping)}</span>
@@ -292,6 +298,18 @@ export default function CheckoutPage() {
                 <span>{formatPrice(total)}</span>
               </div>
             </div>
+
+            {(cart as any)?.giftWrap ? (
+              <div className="mt-4 rounded-xl border border-dashed border-[var(--accent)]/50 bg-[var(--accent-soft)]/15 p-3">
+                <p className="text-[11px] font-semibold text-[var(--accent-strong)]">🎁 این سفارش با بسته‌بندی هدیه ارسال می‌شود</p>
+                <p className="mt-1 text-[10.5px] leading-5 text-[var(--muted)]">
+                  {(cart as any)?.giftNote ? `متن کارت: «${(cart as any).giftNote}»` : "کارت هدیه بدون متن سفارشی"}
+                </p>
+                <Link href="/cart" className="mt-1 inline-block text-[10.5px] text-[var(--accent)] underline">
+                  ویرایش در سبد خرید
+                </Link>
+              </div>
+            ) : null}
 
             <button type="button" onClick={submit} disabled={busy} className="btn btn-primary mt-6 w-full">
               {busy ? "در حال ثبت سفارش…" : "ثبت سفارش و پرداخت"}

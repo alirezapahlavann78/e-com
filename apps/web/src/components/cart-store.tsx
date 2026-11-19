@@ -29,6 +29,8 @@ export type Cart = {
   id: string;
   items: CartItem[];
   discountCode?: { id: string; code: string; type: string; value: string } | null;
+  giftWrap?: boolean;
+  giftNote?: string | null;
   summary?: CartSummary;
 };
 
@@ -86,6 +88,14 @@ export async function addToCart(productId: string, variantId?: string | null, qu
   await guestFetch("/cart/items", {
     method: "POST",
     body: JSON.stringify({ productId, variantId: variantId ?? undefined, quantity }),
+  });
+  notifyCartChanged();
+}
+
+export async function saveGiftOptions(giftWrap: boolean, giftNote: string) {
+  await guestFetch("/cart/gift", {
+    method: "PATCH",
+    body: JSON.stringify({ giftWrap, giftNote: giftNote.trim() || undefined }),
   });
   notifyCartChanged();
 }

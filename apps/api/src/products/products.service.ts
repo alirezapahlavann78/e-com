@@ -104,7 +104,26 @@ export class ProductsService {
     return { ok: true };
   }
 
-  async listPublic(page = 1, limit = 20, q?: string, categorySlug?: string, sort?: string, minPrice?: number, maxPrice?: number, inStock?: boolean) {
+  private buildWhere(opts: {
+    q?: string; categorySlug?: string; minPrice?: number; maxPrice?: number; inStock?: boolean;
+    colors?: string[]; sizes?: string[]; brands?: string[];
+  }) {
+    const and: Record<string, unknown>[] = [];
+    if (opts.q) and.push({ OR: [{ name: { contains: opts.q, mode: "insensitive" } }, { description: { contains: opts.q, mode: "insensitive" } }, { shortDescription: { contains: opts.q, mode: "insensitive" } }] });
+    if (opts.categorySlug) and.push({ categories: { some: { category: { slug: opts.categorySlug, isActive: true } } } });
+    if (opts.minPrice !== undefined || opts.maxPrice !== undefined) {
+      and.push({ basePrice: { ...(opts.minPrice !== undefined ? { gte: opts.minPrice } : {}), ...(opts.maxPrice !== undefined ? { lte: opts.maxPrice } : {}) } });
+    }
+    if (opts.inStock) and.push({ OR: [{ stockQuantity: { gt: 0 } }, { variants: { some: { isActive: true, stockQuantity: { gt: 0 } } } }] });
+    if (opts.brands?.length) and.push({ brand: { in: opts.brands } });
+    const variantConds: Record<string, unknown>[] = [];
+    if (opts.colors?.length) variantConds.push({ attributes: { some: { attributeValue: { slug: { in: opts.colors }, attribute: { slug: "color" } } } } });
+    if (opts.sizes?.length) variantConds.push({ attributes: { some: { attributeValue: { slug: { in: opts.sizes }, attribute: { slug: "size" } } } } });
+    if (variantConds.length) and.push({ variants: { some: { isActive: true, AND: variantConds } } });
+    return { status: "PUBLISHED" as const, ...(and.length ? { AND: and } : {}) };
+  }
+
+  async listPublic(page = 1, limit = 20, q?: string, categorySlug?: string, sort?: string, minPrice?: number, maxPrice?: number, inStock?: boolean, colors?: string[], sizes?: string[], brands?: string[]) {
     const take = Math.min(Math.max(limit, 1), 100);
     const skip = (Math.max(page, 1) - 1) * take;
     const orderBy =
@@ -119,18 +138,63 @@ export class ProductsService {
               : sort === "name"
                 ? { name: "asc" as const }
                 : { publishedAt: "desc" as const };
-    const where = {
-      status: "PUBLISHED" as const,
-      ...(q ? { OR: [{ name: { contains: q, mode: "insensitive" as const } }, { description: { contains: q, mode: "insensitive" as const } }, { shortDescription: { contains: q, mode: "insensitive" as const } }] } : {}),
-      ...(categorySlug ? { categories: { some: { category: { slug: categorySlug, isActive: true } } } } : {}),
-      ...(minPrice !== undefined || maxPrice !== undefined ? { basePrice: { ...(minPrice !== undefined ? { gte: minPrice } : {}), ...(maxPrice !== undefined ? { lte: maxPrice } : {}) } } : {}),
-      ...(inStock ? { OR: [{ stockQuantity: { gt: 0 } }, { variants: { some: { isActive: true, stockQuantity: { gt: 0 } } } }] } : {}),
-    };
+    const where = this.buildWhere({ q, categorySlug, minPrice, maxPrice, inStock, colors, sizes, brands });
     const [items, total] = await this.prisma.$transaction([
       this.prisma.product.findMany({ where, skip, take, orderBy, include: this.include }),
       this.prisma.product.count({ where }),
     ]);
     return { items, total, page, limit: take };
+  }
+
+  async facets(opts: { q?: string; categorySlug?: string; minPrice?: number; maxPrice?: number; inStock?: boolean; brands?: string[] }) {
+    const where = this.buildWhere(opts);
+    const rows = await this.prisma.product.findMany({
+      where,
+      select: {
+        brand: true,
+        basePrice: true,
+        variants: {
+          where: { isActive: true },
+          select: { attributes: { select: { attributeValue: { select: { slug: true, value: true, sortOrder: true, meta: true, attribute: { select: { slug: true } } } } } } },
+        },
+      },
+    });
+
+    const colors = new Map<string, { slug: string; value: string; hex?: string; count: number; order: number }>();
+    const sizes = new Map<string, { slug: string; value: string; count: number; order: number }>();
+    const brands = new Map<string, number>();
+    let min = Number.POSITIVE_INFINITY;
+    let max = 0;
+
+    for (const row of rows) {
+      const price = Number(row.basePrice ?? 0);
+      if (price > 0) { min = Math.min(min, price); max = Math.max(max, price); }
+      if (row.brand) brands.set(row.brand, (brands.get(row.brand) ?? 0) + 1);
+      const seen = new Set<string>();
+      for (const variant of row.variants) {
+        for (const link of variant.attributes) {
+          const av = link.attributeValue;
+          if (!av || seen.has(av.slug)) continue;
+          seen.add(av.slug);
+          if (av.attribute.slug === "color") {
+            const hex = (av.meta as { hex?: string } | null)?.hex;
+            const current = colors.get(av.slug);
+            colors.set(av.slug, { slug: av.slug, value: av.value, hex, order: av.sortOrder, count: (current?.count ?? 0) + 1 });
+          } else if (av.attribute.slug === "size") {
+            const current = sizes.get(av.slug);
+            sizes.set(av.slug, { slug: av.slug, value: av.value, order: av.sortOrder, count: (current?.count ?? 0) + 1 });
+          }
+        }
+      }
+    }
+
+    return {
+      total: rows.length,
+      colors: [...colors.values()].sort((a, b) => a.order - b.order).map(({ order: _order, ...rest }) => rest),
+      sizes: [...sizes.values()].sort((a, b) => a.order - b.order).map(({ order: _order, ...rest }) => rest),
+      brands: [...brands.entries()].map(([value, count]) => ({ value, count })).sort((a, b) => b.count - a.count),
+      priceRange: { min: Number.isFinite(min) ? min : 0, max },
+    };
   }
 
   async autocomplete(q: string, limit = 8) {

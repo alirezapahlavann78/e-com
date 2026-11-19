@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { IsInt, IsOptional, IsString, Min } from "class-validator";
+import { IsBoolean, IsInt, IsOptional, IsString, MaxLength, Min } from "class-validator";
 
 export class AddCartItemDto {
   @ApiProperty() @IsString() productId!: string;
@@ -8,3 +8,8 @@ export class AddCartItemDto {
 }
 export class UpdateCartItemDto { @ApiProperty() @IsInt() @Min(1) quantity!: number; }
 export class CartIdentityDto { @ApiPropertyOptional() @IsOptional() @IsString() guestToken?: string; }
+
+export class GiftOptionsDto {
+  @ApiProperty() @IsBoolean() giftWrap!: boolean;
+  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(240) giftNote?: string;
+}

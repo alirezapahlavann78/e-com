@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import type { StoreLayout } from "./site-chrome";
 import { SearchBox } from "./search-box";
 import { useCart } from "./cart-store";
+import { useCompare } from "./compare-store";
 
 type Props = { layout: NonNullable<StoreLayout["header"]> };
 
@@ -13,6 +14,7 @@ export function HeaderClient({ layout }: Props) {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { cart } = useCart();
+  const { items: compareItems } = useCompare();
   const count = cart?.items?.reduce((sum: number, item: { quantity: number }) => sum + item.quantity, 0) ?? 0;
   const links = layout.links ?? [
     { label: "همه محصولات", href: "/products" },
@@ -104,6 +106,22 @@ export function HeaderClient({ layout }: Props) {
             </Link>
 
             <Link
+              href="/compare"
+              aria-label="مقایسه محصولات"
+              className="relative hidden h-10 w-10 items-center justify-center rounded-full border border-[var(--line)] bg-[var(--panel)] transition hover:border-[var(--accent)] sm:flex"
+            >
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+                <path d="M4 6h9M4 12h6M4 18h9" strokeLinecap="round" />
+                <path d="M17 5v14M17 12l4-4M17 12l-4 4" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {compareItems.length ? (
+                <span className="absolute -end-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--accent)] px-1 text-[9px] font-bold text-white">
+                  {compareItems.length.toLocaleString("fa-IR")}
+                </span>
+              ) : null}
+            </Link>
+
+            <Link
               href="/cart"
               className="relative flex h-10 items-center gap-2 rounded-full bg-[var(--ink)] px-4 text-[13px] font-medium text-[#fbf7f0] transition hover:bg-[var(--accent-strong)]"
             >
@@ -149,6 +167,9 @@ export function HeaderClient({ layout }: Props) {
               ))}
               <Link href="/products" onClick={() => setOpen(false)} className="rounded-xl px-3 py-3 text-base hover:bg-[var(--panel)]">
                 همه محصولات
+              </Link>
+              <Link href="/compare" onClick={() => setOpen(false)} className="rounded-xl px-3 py-3 text-base hover:bg-[var(--panel)]">
+                مقایسه محصولات
               </Link>
               <Link href="/account" onClick={() => setOpen(false)} className="rounded-xl px-3 py-3 text-base hover:bg-[var(--panel)]">
                 حساب من
