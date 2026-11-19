@@ -1,13 +1,28 @@
 "use client";
 import { useState } from "react";
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
-function token() { if (typeof window === "undefined") return ""; let t = localStorage.getItem("guest_cart_token"); if (!t) { t = crypto.randomUUID(); localStorage.setItem("guest_cart_token", t); } return t; }
+import { guestFetch, notifyCartChanged } from "../../../components/cart-store";
+
 export function AddToCartButton({ productId }: { productId: string }) {
   const [msg, setMsg] = useState("");
+  const [loading, setLoading] = useState(false);
+
   async function add() {
     setMsg("");
-    const res = await fetch(`${API}/cart/items?guestToken=${encodeURIComponent(token())}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ productId, quantity: 1 }) });
-    setMsg(res.ok ? "به سبد اضافه شد" : await res.text());
+    setLoading(true);
+    try {
+      await guestFetch("/cart/items", { method: "POST", body: JSON.stringify({ productId, quantity: 1 }) });
+      notifyCartChanged();
+      setMsg("به سبد اضافه شد ✓");
+    } catch (e: any) { setMsg("افزودن به سبد ناموفق بود."); }
+    finally { setLoading(false); }
   }
-  return <div className="mt-6"><button onClick={add} className="rounded-xl bg-stone-900 px-5 py-3 text-white">افزودن به سبد</button>{msg ? <p className="mt-2 text-sm text-stone-600 whitespace-pre-wrap">{msg}</p> : null}</div>;
+
+  return (
+    <div>
+      <button onClick={add} disabled={loading} className="rounded-full bg-[var(--accent)] px-10 py-4 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60">
+        {loading ? "در حال افزودن…" : "افزودن به سبد خرید"}
+      </button>
+      {msg ? <p className="mt-2 text-sm text-[var(--muted)]">{msg}</p> : null}
+    </div>
+  );
 }

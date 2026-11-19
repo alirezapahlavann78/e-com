@@ -1,36 +1,109 @@
 import Link from "next/link";
 import { api } from "../../lib/api";
+import { ProductGrid, type ProductCardData } from "../../components/product-card";
 
-type Product = { id: string; name: string; slug: string; basePrice: string | number | null; shortDescription?: string | null; images?: { url: string; alt?: string | null }[]; variants?: { id: string; stockQuantity: number }[] };
+export const metadata = { title: "محصولات" };
 
-export default async function ProductsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+type SearchParams = { q?: string; category?: string; sort?: string; minPrice?: string; maxPrice?: string; inStock?: string; page?: string };
+
+const SORTS = [
+  { value: "", label: "پیش‌فرض" },
+  { value: "newest", label: "جدیدترین" },
+  { value: "price_asc", label: "ارزان‌ترین" },
+  { value: "price_desc", label: "گران‌ترین" },
+];
+
+export default async function ProductsPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const sp = await searchParams;
-  const qs = new URLSearchParams();
-  for (const k of ["q", "category", "sort", "minPrice", "maxPrice", "inStock", "page"]) { const v = sp[k]; if (typeof v === "string" && v) qs.set(k, v); }
-  const data = await api<{ items: Product[]; total: number; page: number; limit: number }>(`/catalog/products?${qs.toString()}`);
+  const page = Math.max(Number(sp.page ?? 1), 1);
+  const params = new URLSearchParams({ page: String(page), limit: "12" });
+  for (const [k, v] of Object.entries(sp)) if (v) params.set(k, String(v));
+
+  const [data, categories] = await Promise.all([
+    api<{ items: ProductCardData[]; total: number; page: number; limit: number }>(`/catalog/products?${params}`).catch(() => ({ items: [], total: 0, page: 1, limit: 12 })),
+    api<{ id: string; name: string; slug: string }[]>("/catalog/categories").catch(() => []),
+  ]);
+
+  const totalPages = Math.max(Math.ceil(data.total / data.limit), 1);
+  const buildHref = (overrides: Partial<SearchParams>) => {
+    const next = new URLSearchParams(Object.entries({ ...sp, ...overrides }).filter(([, v]) => v != null && v !== "") as [string, string][]);
+    if (page > 1 || overrides.page) next.set("page", String(overrides.page ?? page));
+    else next.delete("page");
+    return `/products${next.size ? `?${next}` : ""}`;
+  };
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-12">
-      <div className="flex items-end justify-between gap-4 border-b border-stone-200 pb-6">
-        <div><p className="text-sm tracking-[0.2em] text-[var(--accent)]">CATALOG</p><h1 className="mt-2 text-4xl font-semibold">محصولات</h1></div>
-        <p className="text-sm text-stone-600">{data.total} محصول</p>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="eyebrow">فروشگاه</p>
+          <h1 className="mt-2 font-display text-4xl">محصولات</h1>
+        </div>
+        <p className="text-sm text-[var(--muted)]">{data.total.toLocaleString("fa-IR")} محصول</p>
       </div>
-      <form className="mt-6 grid gap-3 md:grid-cols-5" action="/products">
-        <input name="q" defaultValue={typeof sp.q === "string" ? sp.q : ""} placeholder="جستجو" className="rounded-xl border border-stone-300 bg-white px-4 py-3 md:col-span-2" />
-        <select name="sort" defaultValue={typeof sp.sort === "string" ? sp.sort : ""} className="rounded-xl border border-stone-300 bg-white px-4 py-3"><option value="">جدیدترین انتشار</option><option value="newest">جدیدترین</option><option value="price_asc">ارزان‌تر</option><option value="price_desc">گران‌تر</option></select>
-        <label className="flex items-center gap-2 rounded-xl border border-stone-300 bg-white px-4 py-3 text-sm"><input type="checkbox" name="inStock" value="true" defaultChecked={sp.inStock === "true"} /> فقط موجود</label>
-        <button className="rounded-xl bg-stone-900 px-4 py-3 text-white">اعمال فیلتر</button>
-      </form>
-      <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {data.items.map((p) => (
-          <Link key={p.id} href={`/products/${p.slug}`} className="group rounded-2xl border border-stone-200 bg-white/80 p-4 shadow-sm transition hover:-translate-y-0.5">
-            <div className="aspect-[4/5] rounded-xl bg-stone-100">{p.images?.[0] ? <img src={p.images[0].url} alt={p.images[0].alt ?? p.name} className="h-full w-full rounded-xl object-cover" /> : null}</div>
-            <h2 className="mt-4 text-lg font-medium group-hover:text-[var(--accent)]">{p.name}</h2>
-            <p className="mt-1 text-sm text-stone-600">{p.basePrice != null ? `${p.basePrice} تومان` : "قیمت متغیر"}</p>
-          </Link>
-        ))}
+
+      <div className="mt-8 grid gap-8 lg:grid-cols-[260px_1fr]">
+        <aside className="space-y-6">
+          <form className="space-y-5 rounded-2xl border border-[var(--line)] bg-[var(--panel)] p-5" action="/products">
+            <div>
+              <label className="text-sm font-medium">جستجو</label>
+              <input name="q" defaultValue={sp.q ?? ""} placeholder="نام محصول…" className="mt-2 w-full rounded-xl border border-[var(--line)] bg-[var(--background)] px-3.5 py-2.5 text-sm" />
+            </div>
+            <div>
+              <label className="text-sm font-medium">دسته‌بندی</label>
+              <select name="category" defaultValue={sp.category ?? ""} className="mt-2 w-full rounded-xl border border-[var(--line)] bg-[var(--background)] px-3.5 py-2.5 text-sm">
+                <option value="">همه</option>
+                {categories.map((c) => <option key={c.id} value={c.slug}>{c.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium">محدوده قیمت (تومان)</label>
+              <div className="mt-2 flex gap-2">
+                <input name="minPrice" type="number" defaultValue={sp.minPrice ?? ""} placeholder="از" className="w-full rounded-xl border border-[var(--line)] bg-[var(--background)] px-3 py-2.5 text-sm" />
+                <input name="maxPrice" type="number" defaultValue={sp.maxPrice ?? ""} placeholder="تا" className="w-full rounded-xl border border-[var(--line)] bg-[var(--background)] px-3 py-2.5 text-sm" />
+              </div>
+            </div>
+            <label className="flex items-center gap-2.5 text-sm">
+              <input type="checkbox" name="inStock" value="true" defaultChecked={sp.inStock === "true"} className="h-4 w-4 accent-[var(--accent)]" />
+              فقط کالاهای موجود
+            </label>
+            <select name="sort" defaultValue={sp.sort ?? ""} className="hidden">
+              {SORTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+            </select>
+            <button type="submit" className="w-full rounded-xl bg-[var(--accent)] py-2.5 text-sm font-medium text-white transition hover:opacity-90">اعمال فیلتر</button>
+          </form>
+        </aside>
+
+        <div>
+          <div className="flex flex-wrap gap-2">
+            {SORTS.map((s) => {
+              const active = (sp.sort ?? "") === s.value;
+              return (
+                <Link key={s.value} href={buildHref({ sort: s.value, page: "1" })}
+                  className={`rounded-full border px-4 py-1.5 text-sm transition ${active ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[var(--line)] hover:border-[var(--accent)]"}`}>
+                  {s.label}
+                </Link>
+              );
+            })}
+          </div>
+
+          {data.items.length ? (
+            <div className="mt-6"><ProductGrid products={data.items} columns={3} /></div>
+          ) : (
+            <div className="mt-6 rounded-2xl border border-dashed border-[var(--line)] py-20 text-center text-[var(--muted)]">محصولی با این فیلترها یافت نشد.</div>
+          )}
+
+          {totalPages > 1 && (
+            <nav className="mt-10 flex justify-center gap-2">
+              {Array.from({ length: totalPages }, (_, i) => String(i + 1)).map((p) => (
+                <Link key={p} href={buildHref({ page: p })} className={`min-w-10 rounded-xl border px-3.5 py-2 text-center text-sm ${p === String(page) ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[var(--line)] hover:border-[var(--accent)]"}`}>
+                  {Number(p).toLocaleString("fa-IR")}
+                </Link>
+              ))}
+            </nav>
+          )}
+        </div>
       </div>
-      {!data.items.length ? <p className="mt-10 rounded-xl border border-dashed border-stone-300 p-8 text-center text-stone-600">محصولی یافت نشد. API باید اجرا و داده منتشرشده داشته باشد.</p> : null}
     </main>
   );
 }

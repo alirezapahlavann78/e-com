@@ -23,13 +23,14 @@ import { DiscountsModule } from "./discounts/discounts.module";
 import { CrmModule } from "./crm/crm.module";
 import { ReviewsModule } from "./reviews/reviews.module";
 import { WishlistModule } from "./wishlist/wishlist.module";
+import { StatsModule } from "./stats/stats.module";
 import { JwtAuthGuard } from "./common/guards/jwt-auth.guard";
 import { PermissionsGuard } from "./common/guards/permissions.guard";
 import { RateLimitGuard } from "./common/guards/rate-limit.guard";
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ isGlobal: true, envFilePath: ["../../.env", ".env"] }),
     PrismaModule,
     AuditModule,
     AuthModule,
@@ -51,6 +52,7 @@ import { RateLimitGuard } from "./common/guards/rate-limit.guard";
     CrmModule,
     ReviewsModule,
     WishlistModule,
+    StatsModule,
   ],
   controllers: [HealthController],
   providers: [

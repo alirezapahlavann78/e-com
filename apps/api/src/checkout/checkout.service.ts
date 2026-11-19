@@ -65,8 +65,9 @@ export class CheckoutService {
     const result = await this.payment.verify({ reference, authority: payment.authority ?? undefined });
     await this.prisma.$transaction(async (tx) => {
       const before = await tx.order.findUnique({ where: { id: payment.orderId } });
-      await tx.payment.update({ where: { id: payment.id }, data: { status: result.status, rawResponse: result.raw as any, paidAt: result.status === "PAID" ? new Date() : null } });
-      const order = await tx.order.update({ where: { id: payment.orderId }, data: { status: result.status === "PAID" ? "PAID" : "CANCELLED", paymentStatus: result.status } });
+      const status = result.status as "PAID" | "FAILED";
+      await tx.payment.update({ where: { id: payment.id }, data: { status, rawResponse: result.raw as any, paidAt: status === "PAID" ? new Date() : null } });
+      const order = await tx.order.update({ where: { id: payment.orderId }, data: { status: status === "PAID" ? "PAID" : "CANCELLED", paymentStatus: status } });
       await tx.orderStatusHistory.create({ data: { orderId: order.id, fromStatus: before?.status, toStatus: order.status, fromPayment: before?.paymentStatus, toPayment: order.paymentStatus, note: `Sandbox payment ${result.status}` } });
       if (result.status !== "PAID") {
         if (before?.discountCodeId) await tx.discountCode.updateMany({ where: { id: before.discountCodeId, usedCount: { gt: 0 } }, data: { usedCount: { decrement: 1 } } });

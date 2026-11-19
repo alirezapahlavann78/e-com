@@ -1,4 +1,5 @@
 import { IsBoolean, IsDateString, IsEnum, IsInt, IsNumber, IsOptional, IsString, Min } from "class-validator";
+import { PartialType } from "@nestjs/swagger";
 
 export class CreateDiscountCodeDto {
   @IsString() code!: string;
@@ -13,5 +14,5 @@ export class CreateDiscountCodeDto {
   @IsOptional() @IsString() campaignId?: string;
   @IsOptional() @IsString() segmentId?: string;
 }
-export class UpdateDiscountCodeDto extends CreateDiscountCodeDto { @IsOptional() declare code?: string; @IsOptional() declare value?: number; }
+export class UpdateDiscountCodeDto extends PartialType(CreateDiscountCodeDto) {}
 export class ApplyDiscountDto { @IsString() code!: string; }

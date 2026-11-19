@@ -11,5 +11,5 @@ export class SandboxPaymentAdapter implements PaymentAdapter {
     const authority = `auth_${randomUUID().slice(0, 8)}`;
     return { provider: "SANDBOX", reference, authority, redirectUrl: `/checkout/sandbox?reference=${encodeURIComponent(reference)}&orderId=${encodeURIComponent(input.orderId)}`, raw: { ...input, mode: "sandbox" } };
   }
-  async verify(input: { reference: string; authority?: string }) { return { status: "PAID", raw: { ...input, verifiedAt: new Date().toISOString(), mode: "sandbox" } }; }
+  async verify(input: { reference: string; authority?: string }): Promise<{ status: "PAID" | "FAILED"; raw: Record<string, unknown> }> { return { status: "PAID", raw: { ...input, verifiedAt: new Date().toISOString(), mode: "sandbox" } }; }
 }

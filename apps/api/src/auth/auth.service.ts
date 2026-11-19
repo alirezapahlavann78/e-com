@@ -25,7 +25,7 @@ export class AuthService {
   private lockoutMax() { return Number(this.config.get("AUTH_LOCKOUT_MAX_ATTEMPTS") ?? 5); }
   private lockoutMinutes() { return Number(this.config.get("AUTH_LOCKOUT_MINUTES") ?? 15); }
 
-  private async issueTokens(user: { id: string; email: string }, family = randomUUID(), meta?: { ip?: string; ua?: string }) {
+  private async issueTokens(user: { id: string; email: string }, family: string = randomUUID(), meta?: { ip?: string; ua?: string }) {
     const accessToken = await this.jwt.signAsync({ sub: user.id, email: user.email, typ: "access" }, { secret: this.config.get("JWT_ACCESS_SECRET"), expiresIn: this.accessTtl() });
     const jti = randomUUID();
     const refreshToken = await this.jwt.signAsync({ sub: user.id, email: user.email, typ: "refresh", jti, family }, { secret: this.config.get("JWT_REFRESH_SECRET"), expiresIn: this.refreshTtl() });

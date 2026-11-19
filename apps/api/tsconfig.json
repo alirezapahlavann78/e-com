@@ -3,7 +3,14 @@
   "compilerOptions": {
     "module": "CommonJS",
     "moduleResolution": "Node",
-    "declaration": true,
+    "declaration": false,
+    "paths": {
+      "@ecom/types": ["../../packages/types/src/index.ts"],
+      "@ecom/validation": ["../../packages/validation/src/index.ts"],
+      "@ecom/utils": ["../../packages/utils/src/index.ts"],
+      "@ecom/ui": ["../../packages/ui/src/index.ts"],
+      "@ecom/db": ["../../packages/db/src/index.ts"]
+    },
     "removeComments": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,

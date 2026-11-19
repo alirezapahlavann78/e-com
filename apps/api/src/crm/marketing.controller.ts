@@ -1,6 +1,6 @@
 import { BadRequestException, Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@ecom/db";
 import { Permissions } from "../common/decorators/permissions.decorator";
 import { CurrentUser, AuthUser } from "../common/decorators/current-user.decorator";
 import { JwtAuthGuard } from "../common/guards/jwt-auth.guard";

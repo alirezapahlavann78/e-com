@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { adminApi } from "../../lib/api";
+import { adminApi } from "../../../lib/api";
 
 type Page = { id: string; title: string; slug: string; type: string; status: string; updatedAt: string };
 
