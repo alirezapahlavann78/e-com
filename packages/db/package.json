@@ -18,7 +18,8 @@
     "db:setup": "node scripts/db-setup.mjs",
     "db:reset": "node scripts/db-setup.mjs --reset",
     "db:local": "node scripts/dev-postgres.mjs",
-    "prisma:seed": "tsx prisma/seed.ts"
+    "prisma:seed": "tsx prisma/seed.ts",
+    "db:local:fresh": "node scripts/dev-postgres.mjs --fresh"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.1",
