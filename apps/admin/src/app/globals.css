@@ -1,36 +1,81 @@
 @import "tailwindcss";
+@import "@fontsource-variable/vazirmatn";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+@theme {
+  --font-sans: "Vazirmatn Variable", ui-sans-serif, system-ui, sans-serif;
+}
+
 :root {
-  --background: #f8fafc;
-  --foreground: #1c1917;
+  --background: #f7f5f1;
+  --foreground: #171410;
   --panel: #ffffff;
-  --panel-2: #f1f5f9;
-  --border: #e2e8f0;
-  --muted: #64748b;
-  --accent: #0284c7;
+  --panel-2: #f2eee7;
+  --border: #e6dfd3;
+  --muted: #7a7166;
+  --accent: #a9713f;
   --accent-ink: #ffffff;
+  --accent-soft: #f0e3d2;
+  --success: #3f7d5a;
+  --danger: #b04a3a;
+  --warning: #b07d2a;
 }
 
 .dark {
-  --background: #0c1117;
-  --foreground: #e8edf2;
-  --panel: #141b24;
-  --panel-2: #1a2430;
-  --border: #263140;
-  --muted: #8b98a9;
-  --accent: #38bdf8;
-  --accent-ink: #0c1117;
+  --background: #12100e;
+  --foreground: #f0e9df;
+  --panel: #1a1714;
+  --panel-2: #231e19;
+  --border: #322b23;
+  --muted: #9a9086;
+  --accent: #c99a63;
+  --accent-ink: #16120d;
+  --accent-soft: #2c241b;
+  --success: #6fb98c;
+  --danger: #e08276;
+  --warning: #d9ab5f;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01";
 }
 
-::selection { background: color-mix(in srgb, var(--accent) 30%, transparent); }
+::selection {
+  background: var(--accent-soft);
+}
 
-/* thin scrollbars for the shell */
-* { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.surface {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+
+.card-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.fade-in {
+  animation: fadeIn 0.35s ease both;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

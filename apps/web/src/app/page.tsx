@@ -1,20 +1,42 @@
 import Link from "next/link";
-import { api } from "../lib/api";
-import { PageRenderer } from "../components/cms/PageRenderer";
 
-type Page = { publishedVersion?: { sections: any[] } | null };
+import { api } from "../lib/api";
+import { PageRenderer, type Section } from "../components/cms/PageRenderer";
+import { ProductGrid, type ProductCardData } from "../components/product-card";
+
+type Page = {
+  title?: string;
+  publishedVersion?: { sections: Section[] } | null;
+};
+
+export const revalidate = 60;
 
 export default async function HomePage() {
-  try {
-    const page = await api<Page>("/cms/home");
-    if (page.publishedVersion?.sections?.length) return <main><PageRenderer sections={page.publishedVersion.sections} /></main>;
-  } catch {}
+  const [page, products] = await Promise.all([
+    api<Page>("/cms/home").catch(() => null),
+    api<{ items: ProductCardData[] }>("/catalog/products?limit=4&sort=newest").catch(() => ({ items: [] })),
+  ]);
+
+  const sections = page?.publishedVersion?.sections ?? [];
+
+  if (sections.length) {
+    return <PageRenderer sections={sections} />;
+  }
+
+  // Fallback keeps the storefront usable before the CMS page is published.
   return (
-    <main className="mx-auto max-w-6xl px-6 py-24">
-      <p className="eyebrow">AGHACI</p>
-      <h1 className="mt-4 font-display text-5xl">فروشگاه مد پوشاک</h1>
-      <p className="mt-6 max-w-2xl text-lg leading-8 text-[var(--muted)]">صفحه Home از CMS بارگذاری نشد؛ API/seed را بررسی کنید.</p>
-      <Link href="/products" className="mt-8 inline-block rounded-full bg-[var(--accent)] px-8 py-3.5 text-sm font-medium text-white transition hover:opacity-90">مشاهده محصولات</Link>
-    </main>
+    <div className="shell section">
+      <p className="eyebrow">آگاهی — کالکشن پاییز</p>
+      <h1 className="display-xl mt-4 max-w-2xl">پوشاکی که با تو نفس می‌کشد</h1>
+      <p className="lead mt-6 max-w-xl">
+        پارچه‌های طبیعی، برش‌های آرام و دوخت ماندگار. برای دیدن کالکشن کامل به فروشگاه بروید.
+      </p>
+      <Link href="/products" className="btn btn-primary mt-8">
+        مشاهده محصولات
+      </Link>
+      <div className="mt-16">
+        <ProductGrid products={products.items} />
+      </div>
+    </div>
   );
 }

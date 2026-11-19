@@ -130,7 +130,7 @@ export default function ProductsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">محصولات</h1>
+          <h1 className="text-lg font-bold">محصولات</h1>
           <p className="text-sm opacity-60">{new Intl.NumberFormat("fa-IR").format(total)} محصول</p>
         </div>
         <Button onClick={() => setCreateOpen(true)}>+ محصول جدید</Button>
@@ -271,7 +271,7 @@ export default function ProductsPage() {
             {detail.seo && (
               <div>
                 <h4 className="mb-2 font-semibold">سئو</h4>
-                <div className="space-y-1 rounded-lg bg-black/5 p-3 dark:bg-white/5">
+                <div className="space-y-1 rounded-lg bg-black/5 p-3 dark:bg-[var(--panel-2)]">
                   <p>عنوان متا: {detail.seo.metaTitle ?? "—"}</p>
                   <p>توضیحات متا: {detail.seo.metaDescription ?? "—"}</p>
                   <p>آدرس کنونیکال: {detail.seo.canonicalUrl ?? "—"}</p>
@@ -359,7 +359,7 @@ export default function ProductsPage() {
 
 function Info({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg bg-black/5 p-3 dark:bg-white/5">
+    <div className="rounded-lg bg-black/5 p-3 dark:bg-[var(--panel-2)]">
       <p className="text-xs opacity-60">{label}</p>
       <p className="font-medium">{value}</p>
     </div>

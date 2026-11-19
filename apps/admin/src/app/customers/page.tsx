@@ -203,7 +203,7 @@ export default function CustomersPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">مدیریت مشتریان و CRM</h1>
+          <h1 className="text-lg font-bold">مدیریت مشتریان و CRM</h1>
           <p className="text-sm opacity-60">
             {faNum(total)} کاربر ثبت‌نامی در فروشگاه
           </p>
@@ -475,7 +475,7 @@ export default function CustomersPage() {
                       className="rounded bg-[var(--panel-2)] p-2.5 text-xs space-y-1"
                     >
                       <div className="flex items-center justify-between text-[11px] text-[var(--muted)]">
-                        <span className="font-semibold text-sky-600 dark:text-sky-400">
+                        <span className="font-semibold text-[var(--accent)]">
                           {noteTypeLabels[n.type] ?? n.type}
                         </span>
                         <span>{faDate(n.createdAt)}</span>

@@ -2,10 +2,28 @@ packages:
   - "apps/*"
   - "packages/*"
 
-onlyBuiltDependencies:
-  - '@parcel/watcher'
-  - '@prisma/client'
-  - '@prisma/engines'
-  - '@scarf/scarf'
-  - esbuild
-  - prisma
+# Native build scripts we allow. Prisma's engine downloads are intentionally
+# disabled: the project uses Prisma 7's Rust-free client (driver adapters), so no
+# binaries.prisma.sh download is required.
+allowBuilds:
+  '@embedded-postgres/linux-x64': true
+  '@embedded-postgres/linux-arm64': true
+  '@embedded-postgres/darwin-arm64': true
+  '@embedded-postgres/darwin-x64': true
+  '@embedded-postgres/windows-x64': true
+  '@parcel/watcher': true
+  '@prisma/engines': false
+  '@scarf/scarf': false
+  esbuild: true
+  prisma: false
+
+minimumReleaseAgeExclude:
+  - '@embedded-postgres/darwin-arm64@18.7.0-beta.19'
+  - '@embedded-postgres/darwin-x64@18.7.0-beta.19'
+  - '@embedded-postgres/linux-arm64@18.7.0-beta.19'
+  - '@embedded-postgres/linux-arm@18.7.0-beta.19'
+  - '@embedded-postgres/linux-ia32@18.7.0-beta.19'
+  - '@embedded-postgres/linux-ppc64@18.7.0-beta.19'
+  - '@embedded-postgres/linux-x64@18.7.0-beta.19'
+  - '@embedded-postgres/windows-x64@18.7.0-beta.19'
+  - embedded-postgres@18.7.0-beta.19

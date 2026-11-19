@@ -5,9 +5,9 @@ import React from "react";
 type ButtonVariant = "primary" | "outline" | "ghost" | "danger";
 const btnBase =
   "inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors " +
-  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 disabled:opacity-50 disabled:pointer-events-none";
+  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] disabled:opacity-50 disabled:pointer-events-none";
 const btnVariants: Record<ButtonVariant, string> = {
-  primary: "bg-sky-600 text-white hover:bg-sky-700 dark:bg-sky-500 dark:hover:bg-sky-400 dark:text-slate-900",
+  primary: "bg-[var(--accent)] text-white hover:brightness-95",
   outline: "border border-[var(--border)] text-[var(--foreground)] hover:bg-[var(--panel-2)]",
   ghost: "text-[var(--foreground)] hover:bg-[var(--panel-2)]",
   danger: "bg-red-600 text-white hover:bg-red-700",
@@ -40,7 +40,7 @@ export function CardHeader({ title, subtitle, action, className = "" }: { title:
 /* ---------- Form primitives ---------- */
 const fieldCls =
   "w-full rounded-lg border border-[var(--border)] bg-[var(--panel-2)] px-3 py-2 text-sm text-[var(--foreground)] " +
-  "placeholder:text-[var(--muted)] focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30";
+  "placeholder:text-[var(--muted)] focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/25";
 export function Input({ className = "", ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
   return <input className={`${fieldCls} ${className}`} {...props} />;
 }
@@ -60,8 +60,8 @@ const badgeVariants: Record<BadgeVariant, string> = {
   success: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 ring-emerald-500/30",
   warn: "bg-amber-500/10 text-amber-600 dark:text-amber-400 ring-amber-500/30",
   danger: "bg-red-500/10 text-red-600 dark:text-red-400 ring-red-500/30",
-  neutral: "bg-slate-500/10 text-slate-600 dark:text-slate-300 ring-slate-500/30",
-  info: "bg-sky-500/10 text-sky-600 dark:text-sky-400 ring-sky-500/30",
+  neutral: "bg-slate-500/10 text-slate-600 dark:text-[var(--foreground)] ring-slate-500/30",
+  info: "bg-[var(--accent)]/10 text-[var(--accent)] ring-[var(--accent)]/30",
 };
 export function Badge({ variant = "neutral", className = "", ...props }: React.HTMLAttributes<HTMLSpanElement> & { variant?: BadgeVariant }) {
   return <span className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${badgeVariants[variant]} ${className}`} {...props} />;
@@ -219,7 +219,7 @@ export function Tabs({ tabs, active, onChange }: { tabs: { key: string; label: s
           onClick={() => onChange(t.key)}
           className={`-mb-px rounded-t-lg border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
             active === t.key
-              ? "border-sky-600 text-sky-600 dark:border-sky-400 dark:text-sky-400"
+              ? "border-[var(--accent)] text-[var(--accent)]"
               : "border-transparent text-[var(--muted)] hover:text-[var(--foreground)]"
           }`}
         >
