@@ -12,6 +12,10 @@ allowBuilds:
   '@embedded-postgres/darwin-x64': true
   '@embedded-postgres/windows-x64': true
   '@parcel/watcher': true
+  # @prisma/client's postinstall would run `prisma generate` and try to fetch
+  # engine binaries; this project generates a Rust-free client with
+  # `pnpm db:generate` (scripts/generate-client.mjs) instead.
+  '@prisma/client': false
   '@prisma/engines': false
   '@scarf/scarf': false
   esbuild: true
