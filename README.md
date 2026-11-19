@@ -25,12 +25,15 @@ Monorepo for a production-oriented fashion e-commerce platform (storefront + adm
    ```powershell
    pnpm install
    ```
-4. Generate Prisma client and apply migrations sequentially (DB must be up). Use the sprint migration names in `docs/sprint-*.md` (`sprint1_*` through latest), then seed:
+4. Generate the Prisma client, create the schema and seed (DB must be up):
    ```powershell
-   pnpm --filter @ecom/db prisma:generate
-   pnpm --filter @ecom/db exec prisma migrate dev --name <sprint_migration>
-   pnpm --filter @ecom/db prisma:seed
+   pnpm db:generate                     # WASM-based generator (no binaries.prisma.sh download)
+   pnpm --filter @ecom/db build         # the API consumes @ecom/db types from dist/
+   pnpm db:setup                        # DDL from schema.prisma + drift repair (idempotent)
+   pnpm db:seed
    ```
+   `pnpm db:reset` drops and recreates the public schema when you want a clean slate.
+   No local Postgres? `pnpm db:local` starts a throwaway PostgreSQL 18 on port 55432.
 5. Run apps:
    ```powershell
    pnpm dev
@@ -44,7 +47,16 @@ Monorepo for a production-oriented fashion e-commerce platform (storefront + adm
 - MinIO console: http://localhost:9001
 
 ## Implemented sprint foundations (see `docs/`)
-- Sprint 0 foundation; Sprint 1 auth/RBAC/core; Sprint 2 catalog; Sprint 3 variants/attributes/storefront catalog; Sprint 4 DB-backed CMS/Page Builder rendered by storefront; Sprint 5 templates/redirects; Sprint 6 cart/checkout/sandbox payment; Sprint 7 inventory/anti-oversell; Sprint 8 orders/returns/invoices; Sprint 9 pricing/promotions/discounts + CRM/marketing schema foundation; Sprint 10 CRM/reviews/wishlist/marketing read foundations; Sprint 11 auth hardening (lockout, email verification tokens, rate limiting) + marketing ops foundations.
+- Sprint 0 foundation; Sprint 1 auth/RBAC/core; Sprint 2 catalog; Sprint 3 variants/attributes/storefront catalog; Sprint 4 DB-backed CMS/Page Builder rendered by storefront; Sprint 5 templates/redirects; Sprint 6 cart/checkout/sandbox payment; Sprint 7 inventory/anti-oversell; Sprint 8 orders/returns/invoices; Sprint 9 pricing/promotions/discounts + CRM/marketing schema foundation; Sprint 10 CRM/reviews/wishlist/marketing read foundations; Sprint 11 auth hardening (lockout, email verification tokens, rate limiting) + marketing ops foundations. Sprint 12 premium storefront redesign + shipping rules; Sprint 13 admin workspace, visual page builder and store settings.
 
 ## Verification status
 Automated install/migrate/typecheck/build/runtime verification is blocked in environments where `pnpm install` cannot reach the registry. Run the local setup steps above when deps/network are available; treat migrations, seed, typecheck, and runtime smoke checks as required before production use.
+
+## Troubleshooting
+- **`P2022` / `column Product.brand does not exist`** — the database predates the current `schema.prisma`.
+  `pnpm db:setup` now detects missing columns and adds them (`ALTER TABLE ... ADD COLUMN`) without dropping data.
+  After pulling schema changes run `pnpm db:generate && pnpm --filter @ecom/db build && pnpm db:setup`.
+- **`Cannot find module './app.module'` from `apps/api/dist/main.js`** — stale incremental build on Windows.
+  Delete `apps/api/dist` and `apps/api/tsconfig.tsbuildinfo`, then `pnpm --filter @ecom/api build`.
+- **`ERR_PNPM_IGNORED_BUILDS: @embedded-postgres/windows-x64`** — pnpm blocks dependency postinstall scripts.
+  Run `pnpm approve-builds` and allow the package (already listed in `pnpm-workspace.yaml`).

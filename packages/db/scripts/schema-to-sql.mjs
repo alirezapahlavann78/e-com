@@ -103,7 +103,7 @@ function mapDefault(value, type, enumValues) {
   return null;
 }
 
-export function schemaToSql(schemaSource) {
+export function parseSchema(schemaSource) {
   const src = stripComments(schemaSource);
   const enums = splitBlocks(src, "enum").map(({ name, body }) => ({
     name,
@@ -136,6 +136,56 @@ export function schemaToSql(schemaSource) {
     }
     return { name, fields, blockAttributes };
   });
+
+  return { enums, enumMap, models };
+}
+
+function columnTypeOf(field, enumMap) {
+  const isEnum = enumMap.has(field.type);
+  let type;
+  if (isEnum) type = quoteIdent(field.type);
+  else {
+    const dbType = field.attrs.find((a) => a.name === "db.Decimal");
+    type = typeof SCALARS[field.type] === "function" ? SCALARS[field.type](dbType?.args) : SCALARS[field.type];
+  }
+  if (field.list) type += "[]";
+  const defaultAttr = field.attrs.find((a) => a.name === "default");
+  const defaultValue = defaultAttr
+    ? mapDefault(defaultAttr.args ?? "", type, isEnum ? enumMap.get(field.type) : undefined)
+    : null;
+  return { type, defaultValue };
+}
+
+/**
+ * Flat list of every physical column the Prisma schema expects, used to repair
+ * schema drift (e.g. a column added to the schema after the database was first
+ * created) without dropping data.
+ */
+export function schemaColumns(schemaSource) {
+  const { models, enumMap } = parseSchema(schemaSource);
+  const columns = [];
+  for (const model of models) {
+    for (const field of model.fields) {
+      const isEnum = enumMap.has(field.type);
+      const isScalar = Object.prototype.hasOwnProperty.call(SCALARS, field.type);
+      if (!isEnum && !isScalar) continue; // relation field: no column of its own
+      const { type, defaultValue } = columnTypeOf(field, enumMap);
+      const isId = field.attrs.some((a) => a.name === "id");
+      columns.push({
+        table: model.name,
+        column: field.name,
+        type,
+        defaultValue,
+        notNull: isId || !field.optional,
+        isId,
+      });
+    }
+  }
+  return columns;
+}
+
+export function schemaToSql(schemaSource) {
+  const { enums, enumMap, models } = parseSchema(schemaSource);
 
   const statements = [];
   for (const e of enums) {
