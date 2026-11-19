@@ -48,9 +48,10 @@ Monorepo for a production-oriented fashion e-commerce platform (storefront + adm
 - API: http://localhost:4000/api
 - Swagger: http://localhost:4000/api/docs
 - MinIO console: http://localhost:9001
+- Uploaded media files: `apps/api/uploads/` (served at `/uploads/...`, 8 MB limit, gitignored)
 
 ## Implemented sprint foundations (see `docs/`)
-- Sprint 0 foundation; Sprint 1 auth/RBAC/core; Sprint 2 catalog; Sprint 3 variants/attributes/storefront catalog; Sprint 4 DB-backed CMS/Page Builder rendered by storefront; Sprint 5 templates/redirects; Sprint 6 cart/checkout/sandbox payment; Sprint 7 inventory/anti-oversell; Sprint 8 orders/returns/invoices; Sprint 9 pricing/promotions/discounts + CRM/marketing schema foundation; Sprint 10 CRM/reviews/wishlist/marketing read foundations; Sprint 11 auth hardening (lockout, email verification tokens, rate limiting) + marketing ops foundations. Sprint 12 premium storefront redesign + shipping rules; Sprint 13 admin workspace, visual page builder and store settings.
+- Sprint 0 foundation; Sprint 1 auth/RBAC/core; Sprint 2 catalog; Sprint 3 variants/attributes/storefront catalog; Sprint 4 DB-backed CMS/Page Builder rendered by storefront; Sprint 5 templates/redirects; Sprint 6 cart/checkout/sandbox payment; Sprint 7 inventory/anti-oversell; Sprint 8 orders/returns/invoices; Sprint 9 pricing/promotions/discounts + CRM/marketing schema foundation; Sprint 10 CRM/reviews/wishlist/marketing read foundations; Sprint 11 auth hardening (lockout, email verification tokens, rate limiting) + marketing ops foundations. Sprint 12 premium storefront redesign + shipping rules; Sprint 13 admin workspace, visual page builder and store settings. Sprint 14 auth recovery (lockout tooling, Persian login errors). Sprint 15 media library + image picker, users & roles, reports with CSV export and printable invoices (see `docs/sprint-15.md`).
 
 ## Verification status
 Automated install/migrate/typecheck/build/runtime verification is blocked in environments where `pnpm install` cannot reach the registry. Run the local setup steps above when deps/network are available; treat migrations, seed, typecheck, and runtime smoke checks as required before production use.

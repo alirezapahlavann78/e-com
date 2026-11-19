@@ -43,3 +43,6 @@ packages/db/.pgdata
 
 # TypeScript incremental build info
 *.tsbuildinfo
+
+# Media uploaded through the admin panel (local disk storage)
+apps/api/uploads/

@@ -2,12 +2,25 @@ import "./env";
 import "reflect-metadata";
 import { ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
+import type { NestExpressApplication } from "@nestjs/platform-express";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import { existsSync, mkdirSync } from "node:fs";
+import { join } from "node:path";
 import { AppModule } from "./app.module";
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.setGlobalPrefix("api");
+
+  // Media uploads are sent as base64 JSON (see MediaController.upload), so the
+  // body limit has to cover an 8 MB image plus base64 overhead.
+  app.useBodyParser("json", { limit: "12mb" });
+  app.useBodyParser("urlencoded", { limit: "12mb", extended: true });
+
+  // Files uploaded through the media library are served from /uploads/<key>.
+  const uploadsDir = join(process.cwd(), "uploads");
+  if (!existsSync(uploadsDir)) mkdirSync(uploadsDir, { recursive: true });
+  app.useStaticAssets(uploadsDir, { prefix: "/uploads/", maxAge: "7d" });
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

@@ -11,3 +11,19 @@ export class CreateMediaAssetDto {
   @ApiPropertyOptional() @IsOptional() @IsString() folder?: string;
   @ApiPropertyOptional({ type: [String] }) @IsOptional() @IsArray() @IsString({ each: true }) tags?: string[];
 }
+
+export class UpdateMediaAssetDto {
+  @ApiPropertyOptional() @IsOptional() @IsString() alt?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() folder?: string;
+  @ApiPropertyOptional({ type: [String] }) @IsOptional() @IsArray() @IsString({ each: true }) tags?: string[];
+}
+
+export class UploadMediaDto {
+  /** Base64 payload, either a full `data:image/png;base64,...` URL or raw base64. */
+  @ApiProperty() @IsString() dataUrl!: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() filename?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() mimeType?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() folder?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() alt?: string;
+  @ApiPropertyOptional({ type: [String] }) @IsOptional() @IsArray() @IsString({ each: true }) tags?: string[];
+}

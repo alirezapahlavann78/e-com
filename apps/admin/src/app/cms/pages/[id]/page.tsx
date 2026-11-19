@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { adminApi, faDateTime, storefrontBase } from "../../../../lib/api";
 import { Badge, Button, Card, Input, Label, Select, Spinner, Textarea } from "../../../../components/ui";
 import { IMAGE_SUGGESTIONS, SECTION_SCHEMAS, labelFor, schemaFor } from "../../../../lib/cms-sections";
+import MediaPicker from "../../../../components/media-picker";
 
 type SectionRow = { id?: string; type: string; isVisible: boolean; config: Record<string, any>; _key: string };
 type Version = { id: string; version: number; label?: string | null; isPublished: boolean; createdAt: string; sections: { type: string; config: any; isVisible: boolean; sortOrder: number }[] };
@@ -551,6 +552,7 @@ export default function PageBuilder() {
 }
 
 function FieldInput({ field, value, onChange }: { field: { key: string; label: string; type: string; options?: { value: string; label: string }[]; placeholder?: string; help?: string; min?: number; max?: number }; value: any; onChange: (value: unknown) => void }) {
+  const [pickerOpen, setPickerOpen] = useState(false);
   if (field.type === "boolean") {
     return (
       <label className="flex items-center justify-between gap-3 text-[11.5px]">
@@ -593,7 +595,13 @@ function FieldInput({ field, value, onChange }: { field: { key: string; label: s
     return (
       <div>
         <Label>{field.label}</Label>
-        <Input value={String(value ?? "")} dir="ltr" placeholder="/media/hero/hero.jpg" onChange={(e) => onChange(e.target.value)} />
+        <div className="flex gap-2">
+          <Input value={String(value ?? "")} dir="ltr" placeholder="/media/hero/hero.jpg" onChange={(e) => onChange(e.target.value)} />
+          <Button type="button" variant="outline" className="shrink-0 px-3 py-1 text-[11px]" onClick={() => setPickerOpen(true)}>
+            کتابخانه
+          </Button>
+        </div>
+        <MediaPicker open={pickerOpen} onClose={() => setPickerOpen(false)} onSelect={(url) => onChange(url)} />
         <div className="mt-1.5 flex flex-wrap gap-1">
           {IMAGE_SUGGESTIONS.slice(0, 5).map((image) => (
             <button key={image} type="button" onClick={() => onChange(image)} className="rounded-md border border-[var(--border)] px-1.5 py-0.5 text-[9.5px] text-[var(--muted)] hover:border-[var(--accent)]">

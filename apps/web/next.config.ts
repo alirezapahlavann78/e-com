@@ -7,7 +7,12 @@ const nextConfig: NextConfig = {
   // The storefront talks to the API through a same-origin `/api` path so the
   // browser never needs to reach a private host/port directly.
   async rewrites() {
-    return [{ source: "/api/:path*", destination: `${API_INTERNAL_URL}/:path*` }];
+    const apiOrigin = API_INTERNAL_URL.replace(/\/api\/?$/, "");
+    return [
+      { source: "/api/:path*", destination: `${API_INTERNAL_URL}/:path*` },
+      // media uploaded through the admin library is served by the API
+      { source: "/uploads/:path*", destination: `${apiOrigin}/uploads/:path*` },
+    ];
   },
   images: {
     remotePatterns: [{ protocol: "https", hostname: "**" }],
