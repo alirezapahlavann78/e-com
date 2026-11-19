@@ -107,7 +107,18 @@ export class ProductsService {
   async listPublic(page = 1, limit = 20, q?: string, categorySlug?: string, sort?: string, minPrice?: number, maxPrice?: number, inStock?: boolean) {
     const take = Math.min(Math.max(limit, 1), 100);
     const skip = (Math.max(page, 1) - 1) * take;
-    const orderBy = sort === "price_asc" ? { basePrice: "asc" as const } : sort === "price_desc" ? { basePrice: "desc" as const } : sort === "newest" ? { createdAt: "desc" as const } : { publishedAt: "desc" as const };
+    const orderBy =
+      sort === "price_asc"
+        ? { basePrice: "asc" as const }
+        : sort === "price_desc"
+          ? { basePrice: "desc" as const }
+          : sort === "newest"
+            ? { createdAt: "desc" as const }
+            : sort === "best"
+              ? { orderItems: { _count: "desc" as const } }
+              : sort === "name"
+                ? { name: "asc" as const }
+                : { publishedAt: "desc" as const };
     const where = {
       status: "PUBLISHED" as const,
       ...(q ? { OR: [{ name: { contains: q, mode: "insensitive" as const } }, { description: { contains: q, mode: "insensitive" as const } }, { shortDescription: { contains: q, mode: "insensitive" as const } }] } : {}),

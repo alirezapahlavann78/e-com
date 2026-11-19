@@ -11,7 +11,10 @@ export class StatsService {
     const start14 = new Date(startOfToday);
     start14.setDate(start14.getDate() - 13);
 
-    const [ordersToday, totalCustomers, totalProducts, recentOrders, lowStockProducts, lowStockVariants, revenue14d, ordersByStatusRows] =
+    const start30 = new Date(startOfToday);
+    start30.setDate(start30.getDate() - 29);
+
+    const [ordersToday, totalCustomers, totalProducts, recentOrders, lowStockProducts, lowStockVariants, revenue14d, ordersByStatusRows, paidOrders30d, topProductRows] =
       await Promise.all([
         this.prisma.order.findMany({
           where: { createdAt: { gte: startOfToday } },
@@ -44,6 +47,17 @@ export class StatsService {
           select: { createdAt: true, total: true },
         }),
         this.prisma.order.groupBy({ by: ["status"], _count: { _all: true } }),
+        this.prisma.order.findMany({
+          where: { createdAt: { gte: start30 }, paymentStatus: "PAID" },
+          select: { total: true, status: true },
+        }),
+        this.prisma.orderItem.groupBy({
+          by: ["name"],
+          where: { order: { paymentStatus: "PAID" } },
+          _sum: { totalPrice: true, quantity: true },
+          orderBy: { _sum: { totalPrice: "desc" } },
+          take: 5,
+        }),
       ]);
 
     const num = (v: any) => Number(v ?? 0);
@@ -72,7 +86,18 @@ export class StatsService {
       .sort((a, b) => a.stockQuantity - b.stockQuantity)
       .slice(0, 10);
 
+    const revenue30d = paidOrders30d.reduce((sum, order) => sum + num(order.total), 0);
+    const paidCount30d = paidOrders30d.length;
+
     return {
+      revenue30d,
+      orders30d: paidCount30d,
+      averageOrderValue: paidCount30d ? Math.round(revenue30d / paidCount30d) : 0,
+      topProducts: topProductRows.map((row) => ({
+        name: row.name,
+        revenue: num(row._sum.totalPrice),
+        quantity: num(row._sum.quantity),
+      })),
       revenueToday,
       revenue14d: days,
       ordersToday: ordersToday.length,

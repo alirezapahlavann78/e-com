@@ -169,7 +169,7 @@ export default function OrderDetailPage() {
                 <p className="mb-2 font-semibold">پرداخت‌ها</p>
                 <div className="space-y-2">
                   {order.payments.map((p) => (
-                    <div key={p.id} className="flex items-center justify-between rounded-lg bg-black/5 p-2 text-xs dark:bg-white/5">
+                    <div key={p.id} className="flex items-center justify-between rounded-lg bg-black/5 p-2 text-xs dark:bg-[var(--panel-2)]">
                       <span dir="ltr">{p.provider}</span>
                       <StatusBadge status={p.status} kind="payment" />
                       <span>{money(p.amount)}</span>
@@ -259,7 +259,7 @@ export default function OrderDetailPage() {
           </form>
           <div className="max-h-64 space-y-3 overflow-y-auto p-4">
             {order.notes.map((n) => (
-              <div key={n.id} className="rounded-lg bg-black/5 p-3 text-sm dark:bg-white/5">
+              <div key={n.id} className="rounded-lg bg-black/5 p-3 text-sm dark:bg-[var(--panel-2)]">
                 <p>{n.body}</p>
                 <p className="mt-1 text-xs opacity-50">{dateTime(n.createdAt)}{n.actorEmail ? ` — ${n.actorEmail}` : ""}</p>
               </div>
@@ -303,7 +303,7 @@ export default function OrderDetailPage() {
           </form>
           <div className="space-y-3 p-4 text-sm">
             {order.shipments.map((s) => (
-              <div key={s.id} className="rounded-lg bg-black/5 p-3 dark:bg-white/5">
+              <div key={s.id} className="rounded-lg bg-black/5 p-3 dark:bg-[var(--panel-2)]">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="font-medium">{s.carrier ?? "حامل نامشخص"}</span>
                   <StatusBadge status={s.status} />
@@ -321,7 +321,7 @@ export default function OrderDetailPage() {
           <h2 className="border-b p-4 font-bold">مرجوعی‌ها</h2>
           <div className="space-y-3 p-4 text-sm">
             {order.returnRequests.map((r) => (
-              <div key={r.id} className="rounded-lg bg-black/5 p-3 dark:bg-white/5">
+              <div key={r.id} className="rounded-lg bg-black/5 p-3 dark:bg-[var(--panel-2)]">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <StatusBadge status={r.status} kind="return" />
                   <span className="text-xs opacity-50">{dateTime(r.requestedAt)}</span>
@@ -345,7 +345,7 @@ export default function OrderDetailPage() {
           <h2 className="border-b p-4 font-bold">صورتحساب</h2>
           <div className="space-y-3 p-4 text-sm">
             {order.invoices.map((inv) => (
-              <div key={inv.id} className="flex items-center justify-between rounded-lg bg-black/5 p-3 dark:bg-white/5">
+              <div key={inv.id} className="flex items-center justify-between rounded-lg bg-black/5 p-3 dark:bg-[var(--panel-2)]">
                 <span className="font-medium" dir="ltr">{inv.number}</span>
                 <span>{money(inv.total)}</span>
                 <span className="text-xs opacity-50">{dateTime(inv.issuedAt)}</span>
@@ -410,7 +410,7 @@ export default function OrderDetailPage() {
           {order.refunds.length > 0 && (
             <div className="space-y-2 border-t p-4 text-sm">
               {order.refunds.map((f) => (
-                <div key={f.id} className="flex items-center justify-between rounded-lg bg-black/5 p-2 text-xs dark:bg-white/5">
+                <div key={f.id} className="flex items-center justify-between rounded-lg bg-black/5 p-2 text-xs dark:bg-[var(--panel-2)]">
                   <span>{money(f.amount)}</span>
                   <StatusBadge status={f.status} kind="refund" />
                   <span className="opacity-50">{dateTime(f.createdAt)}</span>

@@ -1,10 +1,25 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+
 import "./globals.css";
-import { SiteHeader, SiteFooter } from "../components/site-chrome";
+import { SiteFooter, SiteHeader } from "../components/site-chrome";
 
 export const metadata: Metadata = {
-  title: { default: "Aghaci Store", template: "%s | Aghaci" },
-  description: "پوشاک مدرن با کیفیت پریمیوم — فروشگاه آنلاین Aghaci",
+  title: {
+    default: "آگاهی | پوشاک مینیمال ایرانی",
+    template: "%s | آگاهی",
+  },
+  description:
+    "آگاهی، فروشگاه پوشاک مینیمال با تولید محدود، پارچه‌های طبیعی و دوخت ماندگار. خرید آنلاین کالکشن پاییز.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
+  openGraph: {
+    title: "آگاهی | پوشاک مینیمال ایرانی",
+    description: "کالکشن پاییز آگاهی — تولید محدود، پارچه طبیعی.",
+    type: "website",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#f6f1e8",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -12,7 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="fa" dir="rtl">
       <body className="min-h-screen antialiased">
         <SiteHeader />
-        <div className="min-h-[60vh]">{children}</div>
+        <main className="min-h-[55vh]">{children}</main>
         <SiteFooter />
       </body>
     </html>

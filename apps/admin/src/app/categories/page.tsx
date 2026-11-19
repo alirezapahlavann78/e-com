@@ -151,7 +151,7 @@ export default function CategoriesPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">دسته‌بندی‌ها</h1>
+          <h1 className="text-lg font-bold">دسته‌بندی‌ها</h1>
           <p className="text-sm opacity-60">{new Intl.NumberFormat("fa-IR").format(items.length)} دسته‌بندی</p>
         </div>
         <Button onClick={openCreate}>+ دسته جدید</Button>
@@ -192,7 +192,7 @@ function TreeNodeRow({ node, depth, expanded, onToggle, onEdit }: {
   return (
     <div>
       <div
-        className="flex items-center gap-2 rounded-lg px-2 py-2 hover:bg-black/5 dark:hover:bg-white/5"
+        className="flex items-center gap-2 rounded-lg px-2 py-2 hover:bg-black/5 dark:hover:bg-[var(--panel-2)]"
         style={{ marginInlineStart: depth * 24 }}
       >
         {node.children.length > 0 ? (

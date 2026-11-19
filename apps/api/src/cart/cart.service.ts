@@ -61,6 +61,23 @@ export class CartService {
     return this.summary(await this.prisma.cart.findUniqueOrThrow({ where: { id: cart.id }, include: this.include }), input.userId);
   }
 
+  /** Shipping quote derived from store settings (free above threshold). */
+  async shippingQuote(subtotal: number, freeShipping = false) {
+    const settings = await this.prisma.storeSetting.findMany({
+      where: { key: { in: ["shipping.freeThreshold", "shipping.standardRate"] } },
+    });
+    const read = (key: string, fallback: number) => {
+      const row = settings.find((item) => item.key === key);
+      const value = row?.value as unknown;
+      const numeric = typeof value === "number" ? value : Number((value as { value?: number })?.value ?? value);
+      return Number.isFinite(numeric) && numeric >= 0 ? numeric : fallback;
+    };
+    const threshold = read("shipping.freeThreshold", 5_000_000);
+    const rate = read("shipping.standardRate", 89_000);
+    const amount = freeShipping || subtotal >= threshold || subtotal === 0 ? 0 : rate;
+    return { amount, threshold, remainingForFree: Math.max(0, threshold - subtotal) };
+  }
+
   async summary(cart: any, userId?: string) {
     const subtotal = cart.items.reduce((s: number, i: any) => s + Number(i.unitPrice) * i.quantity, 0);
     let discountAmount = 0; let freeShipping = false; let discountError: string | undefined;
@@ -68,7 +85,19 @@ export class CartService {
       try { const r = await this.discounts.resolveActive(cart.discountCode.code, subtotal, userId ?? cart.userId ?? undefined); discountAmount = r.discountAmount; freeShipping = r.freeShipping; }
       catch (e: any) { discountError = e?.message ?? "Discount unavailable"; }
     }
-    const shippingAmount = freeShipping ? 0 : 0;
-    return { ...cart, summary: { subtotal, discountAmount, shippingAmount, taxAmount: 0, total: Math.max(0, subtotal - discountAmount + shippingAmount), freeShipping, discountError } };
+    const shipping = await this.shippingQuote(subtotal, freeShipping);
+    return {
+      ...cart,
+      summary: {
+        subtotal,
+        discountAmount,
+        shippingAmount: shipping.amount,
+        taxAmount: 0,
+        total: Math.max(0, subtotal - discountAmount + shipping.amount),
+        freeShipping,
+        freeShippingRemaining: shipping.remainingForFree,
+        discountError,
+      },
+    };
   }
 }

@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
+
 import "./globals.css";
 import AdminShell from "../components/admin-shell";
 
 export const metadata: Metadata = {
-  title: "Aghaci Admin",
-  description: "E-commerce administration dashboard",
+  title: "پنل مدیریت آگاهی",
+  description: "مدیریت فروشگاه، سفارش‌ها، محتوا و صفحه‌ساز",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

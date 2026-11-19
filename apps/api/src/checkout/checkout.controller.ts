@@ -9,7 +9,20 @@ import { CheckoutService } from "./checkout.service";
 export class CheckoutController {
   constructor(private checkout: CheckoutService) {}
   @Public() @Post()
-  create(@Body() body: { guestToken?: string; email: string; shippingAddress: Record<string, unknown>; discountCode?: string }, @CurrentUser() user: AuthUser | undefined) { return this.checkout.createOrder({ userId: user?.id, ...body }); }
+  create(
+    @Body()
+    body: {
+      guestToken?: string;
+      email: string;
+      shippingAddress: Record<string, unknown>;
+      discountCode?: string;
+      shippingMethod?: "standard" | "express";
+      customerNote?: string;
+    },
+    @CurrentUser() user: AuthUser | undefined,
+  ) {
+    return this.checkout.createOrder({ userId: user?.id, ...body });
+  }
   @Public() @Get("sandbox/verify")
   verify(@Query("reference") reference: string) { return this.checkout.verifySandbox(reference); }
 }

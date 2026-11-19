@@ -4,13 +4,7 @@
     "module": "CommonJS",
     "moduleResolution": "Node",
     "declaration": false,
-    "paths": {
-      "@ecom/types": ["../../packages/types/src/index.ts"],
-      "@ecom/validation": ["../../packages/validation/src/index.ts"],
-      "@ecom/utils": ["../../packages/utils/src/index.ts"],
-      "@ecom/ui": ["../../packages/ui/src/index.ts"],
-      "@ecom/db": ["../../packages/db/src/index.ts"]
-    },
+    "paths": {},
     "removeComments": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
@@ -24,6 +18,12 @@
     "noImplicitAny": false,
     "strictBindCallApply": false
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "dist", "test"]
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "test"
+  ]
 }

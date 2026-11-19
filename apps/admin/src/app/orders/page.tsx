@@ -71,7 +71,7 @@ export default function OrdersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">سفارش‌ها</h1>
+        <h1 className="text-lg font-bold">سفارش‌ها</h1>
         <p className="text-sm opacity-60">{new Intl.NumberFormat("fa-IR").format(total)} سفارش</p>
       </div>
 

@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import { formatPrice, formatDate, statusFa } from "../../../../lib/format";
 import { OrderStatusBadge } from "../../../../components/order-status-badge";
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
+const API = process.env.NEXT_PUBLIC_API_URL ?? "/api";
 const RETURNABLE = new Set(["PAID", "PROCESSING", "SHIPPED", "DELIVERED", "COMPLETED"]);
 
 export default function MyOrderPage() {
@@ -17,7 +17,7 @@ export default function MyOrderPage() {
   const [msg, setMsg] = useState("");
 
   const load = () => {
-    const token = localStorage.getItem("accessToken");
+    const token = localStorage.getItem("access_token");
     if (!token || !params?.id) { setErr("برای مشاهده وارد شوید."); return; }
     fetch(`${API}/my/orders/${params.id}`, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
@@ -27,7 +27,7 @@ export default function MyOrderPage() {
   useEffect(load, [params?.id]);
 
   const submitReturn = async () => {
-    const token = localStorage.getItem("accessToken");
+    const token = localStorage.getItem("access_token");
     setMsg("");
     const r = await fetch(`${API}/my/orders/${params.id}/returns`, {
       method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },

@@ -172,7 +172,7 @@ export default function InventoryPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">مدیریت انبار و موجودی</h1>
+          <h1 className="text-lg font-bold">مدیریت انبار و موجودی</h1>
           <p className="text-sm opacity-60">
             {faNum(total)} ردیف کالا و متغیر در سیستم انبارداری
           </p>

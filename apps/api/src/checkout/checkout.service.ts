@@ -10,7 +10,15 @@ function orderNumber() { return `AG-${Date.now().toString(36).toUpperCase()}`; }
 export class CheckoutService {
   constructor(private prisma: PrismaService, private cartService: CartService, private payment: SandboxPaymentAdapter, private discounts: DiscountsService) {}
 
-  async createOrder(input: { userId?: string; guestToken?: string; email: string; shippingAddress: Record<string, unknown>; discountCode?: string }) {
+  async createOrder(input: {
+    userId?: string;
+    guestToken?: string;
+    email: string;
+    shippingAddress: Record<string, unknown>;
+    discountCode?: string;
+    shippingMethod?: "standard" | "express";
+    customerNote?: string;
+  }) {
     const cart = await this.cartService.getOrCreate(input);
     if (!cart.items.length) throw new BadRequestException("Cart is empty");
     const order = await this.prisma.$transaction(async (tx) => {
@@ -23,13 +31,21 @@ export class CheckoutService {
       const subtotal = fresh.items.reduce((s, i) => s + Number(i.unitPrice) * i.quantity, 0);
       const code = input.discountCode ?? fresh.discountCode?.code;
       const discount = code ? await this.discounts.resolveActive(code, subtotal, input.userId) : null;
-      const shippingAmount = discount?.freeShipping ? 0 : 0;
+      const quote = await this.cartService.shippingQuote(subtotal, discount?.freeShipping ?? false);
+      let shippingAmount = quote.amount;
+      if (input.shippingMethod === "express" && shippingAmount > 0) {
+        const expressSetting = await tx.storeSetting.findUnique({ where: { key: "shipping.expressRate" } });
+        const expressRate = Number((expressSetting?.value as { value?: number } | number | null) ?? 149_000);
+        shippingAmount = Number.isFinite(expressRate) ? expressRate : shippingAmount;
+      }
       const discountAmount = discount?.discountAmount ?? 0;
       const total = Math.max(0, subtotal - discountAmount + shippingAmount);
       const created = await tx.order.create({
         data: {
           number: orderNumber(), userId: input.userId, cartId: fresh.id, email: input.email, status: "AWAITING_PAYMENT", paymentStatus: "PENDING",
-          currency: fresh.currency, subtotal, discountAmount, shippingAmount, taxAmount: 0, total, discountCodeId: discount?.discountCode.id, shippingAddress: input.shippingAddress as any, placedAt: new Date(),
+          currency: fresh.currency, subtotal, discountAmount, shippingAmount, taxAmount: 0, total, discountCodeId: discount?.discountCode.id,
+          shippingAddress: { ...input.shippingAddress, shippingMethod: input.shippingMethod ?? "standard" } as any,
+          customerNote: input.customerNote, placedAt: new Date(),
           items: { create: fresh.items.map((i) => ({ productId: i.productId, variantId: i.variantId, name: i.product.name, sku: i.variant?.sku ?? i.product.sku, variantTitle: i.variant?.title, quantity: i.quantity, unitPrice: i.unitPrice, totalPrice: Number(i.unitPrice) * i.quantity, imageUrl: i.variant?.imageUrl ?? null })) },
           statusHistory: { create: { toStatus: "AWAITING_PAYMENT", toPayment: "PENDING", note: discount ? `Order created with discount ${discount.discountCode.code}` : "Order created from checkout" } },
           discountRedemptions: discount ? { create: { discountCodeId: discount.discountCode.id, userId: input.userId, amount: discountAmount } } : undefined,

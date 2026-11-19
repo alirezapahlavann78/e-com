@@ -158,7 +158,7 @@ export default function DiscountsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">مدیریت کدهای تخفیف</h1>
+          <h1 className="text-lg font-bold">مدیریت کدهای تخفیف</h1>
           <p className="text-sm opacity-60">
             {faNum(items.length)} کد تخفیف و کوپن تبلیغاتی فعال در سیستم
           </p>
@@ -194,7 +194,7 @@ export default function DiscountsPage() {
             <TBody>
               {items.map((d) => (
                 <TR key={d.id}>
-                  <TD className="font-mono font-bold text-sky-600 dark:text-sky-400" dir="ltr">
+                  <TD className="font-mono font-bold text-[var(--accent)]" dir="ltr">
                     {d.code}
                   </TD>
                   <TD className="text-xs">
