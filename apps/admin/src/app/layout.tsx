@@ -11,7 +11,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fa" dir="rtl" suppressHydrationWarning>
-      <body className="antialiased">
+      {/* suppressHydrationWarning also on <body>: browser extensions (e.g. password managers)
+          inject attributes such as cz-shortcut-listen before React hydrates. */}
+      <body className="antialiased" suppressHydrationWarning>
         <AdminShell>{children}</AdminShell>
       </body>
     </html>

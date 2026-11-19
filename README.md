@@ -56,6 +56,13 @@ Monorepo for a production-oriented fashion e-commerce platform (storefront + adm
 Automated install/migrate/typecheck/build/runtime verification is blocked in environments where `pnpm install` cannot reach the registry. Run the local setup steps above when deps/network are available; treat migrations, seed, typecheck, and runtime smoke checks as required before production use.
 
 ## Troubleshooting
+- **`Account temporarily locked due to failed login attempts` (403)** — five wrong passwords lock an account
+  (`AUTH_LOCKOUT_MAX_ATTEMPTS`, default 5) for `AUTH_LOCKOUT_MINUTES` (default 15). Clear it immediately:
+  `pnpm user:unlock` (all accounts) or `pnpm user:unlock --email=admin@aghaci.local`. Wrong password?
+  `pnpm user:passwd --email=admin@aghaci.local --password=Admin@12345` resets it, or `pnpm db:seed` re-applies
+  `ADMIN_BOOTSTRAP_PASSWORD` and clears the lockout. Inspect accounts with `pnpm user:list`.
+- **Hydration warning about `cz-shortcut-listen` on `<body>`** — a browser extension injects that attribute before
+  React hydrates. Both layouts set `suppressHydrationWarning`; the message is harmless and disappears in incognito.
 - **`22P05 ... has no equivalent in encoding "WIN1252"` while seeding** — the Postgres cluster was created with
   the Windows ANSI code page, so it cannot store Persian text. Run `pnpm db:reset` (the script recreates the
   database as UTF8 automatically) or `rm -rf packages/db/.pgdata && pnpm db:local:fresh` for a fresh UTF8 cluster.

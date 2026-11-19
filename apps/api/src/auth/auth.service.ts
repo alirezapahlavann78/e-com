@@ -43,16 +43,29 @@ export class AuthService {
     return { user: this.safeUser(user), ...tokens, emailVerification: { required: true, expiresAt: verification.expiresAt, devToken: this.config.get("NODE_ENV") !== "production" ? verification.token : undefined } };
   }
 
+  private lockedError(until: Date) {
+    const minutes = Math.max(1, Math.ceil((until.getTime() - Date.now()) / 60_000));
+    return new ForbiddenException({
+      statusCode: 403,
+      code: "ACCOUNT_LOCKED",
+      message: `Account temporarily locked due to failed login attempts. Try again in ${minutes} minute(s), or run \`pnpm user:unlock\` to unlock it immediately.`,
+      retryAfterMinutes: minutes,
+    });
+  }
+
   async login(dto: LoginDto, meta?: { ip?: string; ua?: string }) {
     const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
     if (!user) throw new UnauthorizedException("Invalid credentials");
-    if (user.lockoutUntil && user.lockoutUntil > new Date()) throw new ForbiddenException("Account temporarily locked due to failed login attempts");
+    if (user.lockoutUntil && user.lockoutUntil > new Date()) throw this.lockedError(user.lockoutUntil);
     if (!verifyPassword(dto.password, user.passwordHash)) {
       const attempts = (user.failedLoginAttempts ?? 0) + 1;
       const locked = attempts >= this.lockoutMax();
-      await this.prisma.user.update({ where: { id: user.id }, data: { failedLoginAttempts: locked ? 0 : attempts, lockoutUntil: locked ? new Date(Date.now() + this.lockoutMinutes() * 60_000) : null } });
+      const lockoutUntil = locked ? new Date(Date.now() + this.lockoutMinutes() * 60_000) : null;
+      await this.prisma.user.update({ where: { id: user.id }, data: { failedLoginAttempts: locked ? 0 : attempts, lockoutUntil } });
       await this.audit.log({ actorId: user.id, actorEmail: user.email, action: locked ? "auth.lockout" : "auth.login.failed", entity: "User", entityId: user.id, ipAddress: meta?.ip, userAgent: meta?.ua, metadata: { attempts } });
-      throw locked ? new ForbiddenException("Account temporarily locked due to failed login attempts") : new UnauthorizedException("Invalid credentials");
+      throw locked && lockoutUntil
+        ? this.lockedError(lockoutUntil)
+        : new UnauthorizedException({ statusCode: 401, code: "INVALID_CREDENTIALS", message: "Invalid credentials", remainingAttempts: Math.max(0, this.lockoutMax() - attempts) });
     }
     if (user.status !== "ACTIVE") throw new UnauthorizedException("User inactive");
     await this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date(), failedLoginAttempts: 0, lockoutUntil: null } });
