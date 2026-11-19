@@ -254,7 +254,7 @@ export default function CheckoutPage() {
             <div className="mt-4 space-y-3 border-b border-[var(--line)] pb-4">
               {items.map((item: any) => (
                 <div key={item.id} className="flex items-center gap-3">
-                  <div className="h-14 w-11 shrink-0 overflow-hidden rounded-lg bg-[#ece4d6]">
+                  <div className="h-14 w-11 shrink-0 overflow-hidden rounded-lg bg-[var(--image-bg)]">
                     {item.product.images?.[0] ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={item.product.images[0].url} alt="" className="h-full w-full object-cover" />

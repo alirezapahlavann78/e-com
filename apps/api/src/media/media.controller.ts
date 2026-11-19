@@ -1,9 +1,8 @@
 import { BadRequestException, Body, Controller, Delete, Get, NotFoundException, Param, Patch, Post, Query, Res, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import type { Response } from "express";
-import { randomUUID } from "node:crypto";
-import { mkdir, unlink, writeFile } from "node:fs/promises";
-import { dirname, extname, join, relative, resolve, sep } from "node:path";
+import { unlink } from "node:fs/promises";
+import { join, relative, resolve, sep } from "node:path";
 import { PrismaService } from "../prisma/prisma.service";
 import { JwtAuthGuard } from "../common/guards/jwt-auth.guard";
 import { PermissionsGuard } from "../common/guards/permissions.guard";
@@ -11,29 +10,7 @@ import { RequirePermissions } from "../common/decorators/permissions.decorator";
 import { CurrentUser, type AuthUser } from "../common/decorators/current-user.decorator";
 import { AuditService } from "../audit/audit.service";
 import { CreateMediaAssetDto, UpdateMediaAssetDto, UploadMediaDto } from "./dto/media.dto";
-
-/** Root folder for locally uploaded files (served at /uploads by main.ts). */
-const UPLOAD_ROOT = resolve(process.cwd(), "uploads");
-const MAX_BYTES = 8 * 1024 * 1024;
-
-const EXT_BY_MIME: Record<string, string> = {
-  "image/jpeg": ".jpg",
-  "image/png": ".png",
-  "image/webp": ".webp",
-  "image/avif": ".avif",
-  "image/gif": ".gif",
-  "image/svg+xml": ".svg",
-  "application/pdf": ".pdf",
-  "video/mp4": ".mp4",
-};
-
-const slug = (value: string) =>
-  value
-    .normalize("NFKD")
-    .replace(/[^\w.-]+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "")
-    .toLowerCase() || "file";
+import { UPLOAD_ROOT, saveDataUrl, slugifyFile } from "../common/local-upload";
 
 @ApiTags("admin-media")
 @ApiBearerAuth()
@@ -77,26 +54,14 @@ export class MediaController {
    */
   @Post("upload") @RequirePermissions("media:write")
   async upload(@Body() dto: UploadMediaDto, @CurrentUser() user: AuthUser) {
-    const match = /^data:([\w/+.-]+);base64,(.+)$/s.exec(dto.dataUrl) ?? null;
-    const base64 = (match ? match[2] : dto.dataUrl.replace(/^data:[^,]*,/, "")) ?? "";
-    const mimeType = dto.mimeType ?? match?.[1] ?? "application/octet-stream";
-    if (!EXT_BY_MIME[mimeType] && !mimeType.startsWith("image/")) {
-      throw new BadRequestException("Only images, PDF and MP4 files can be uploaded");
-    }
-
-    const buffer = Buffer.from(base64, "base64");
-    if (!buffer.length) throw new BadRequestException("Empty file");
-    if (buffer.length > MAX_BYTES) throw new BadRequestException("File is larger than 8 MB");
-
-    const folder = slug(dto.folder ?? "uploads");
-    const original = slug(dto.filename ?? `${Date.now()}`);
-    const ext = EXT_BY_MIME[mimeType] ?? (extname(original) || ".bin");
-    const base = original.endsWith(ext) ? original.slice(0, -ext.length) : original;
-    const key = `${folder}/${Date.now()}-${base}-${randomUUID().slice(0, 6)}${ext}`;
-
-    const absolute = join(UPLOAD_ROOT, ...key.split("/"));
-    await mkdir(dirname(absolute), { recursive: true });
-    await writeFile(absolute, buffer);
+    const stored = await saveDataUrl(dto.dataUrl, {
+      folder: dto.folder ?? "uploads",
+      mimeType: dto.mimeType,
+      filename: dto.filename,
+    });
+    const key = stored.key;
+    const folder = key.split("/")[0]!;
+    const mimeType = stored.mimeType;
 
     const asset = await this.prisma.mediaAsset.create({
       data: {
@@ -104,7 +69,7 @@ export class MediaController {
         bucket: "local",
         url: `/uploads/${key}`,
         mimeType,
-        size: buffer.length,
+        size: stored.size,
         alt: dto.alt ?? null,
         folder,
         tags: dto.tags ?? [],

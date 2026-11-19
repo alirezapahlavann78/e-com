@@ -36,6 +36,7 @@ interface ProductReviewItem {
     id: string;
     email: string;
   } | null;
+  images?: { id: string; url: string; alt: string | null }[];
 }
 
 interface ReviewsResponse {
@@ -186,6 +187,17 @@ export default function ReviewsPage() {
                     <TD className="max-w-md">
                       {r.title ? <p className="font-semibold text-xs">{r.title}</p> : null}
                       <p className="text-xs text-[var(--muted)] line-clamp-2">{r.body || "—"}</p>
+                      {r.images?.length ? (
+                        <div className="mt-2 flex gap-1.5">
+                          {r.images.map((image) => (
+                            <a key={image.id} href={image.url} target="_blank" rel="noreferrer" className="block h-10 w-10 overflow-hidden rounded-md border border-[var(--border)]">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={image.url} alt={image.alt ?? ""} className="h-full w-full object-cover" />
+                            </a>
+                          ))}
+                          <span className="self-end text-[10px] text-[var(--muted)]">{r.images.length.toLocaleString("fa-IR")} عکس</span>
+                        </div>
+                      ) : null}
                     </TD>
                     <TD>
                       {r.status === "APPROVED" ? (

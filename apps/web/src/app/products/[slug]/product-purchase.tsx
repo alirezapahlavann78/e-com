@@ -64,7 +64,7 @@ export function ProductPurchase({ product, rating }: { product: PurchaseProduct;
     <div className="grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:gap-16">
       {/* Gallery */}
       <div>
-        <div className="relative overflow-hidden rounded-[28px] bg-[#ece4d6]">
+        <div className="relative overflow-hidden rounded-[28px] bg-[var(--image-bg)]">
           {gallery[activeImage]?.url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img

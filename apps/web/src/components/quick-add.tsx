@@ -22,7 +22,7 @@ export function QuickAdd({
       <a
         href={`/products/${slug}`}
         aria-label="انتخاب سایز"
-        className="quick-add flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--panel)] text-[var(--ink)] shadow-md ring-1 ring-[var(--line)] transition hover:bg-[var(--ink)] hover:text-white"
+        className="quick-add flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--panel)] text-[var(--foreground)] shadow-md ring-1 ring-[var(--line)] transition hover:bg-[var(--ink)] hover:text-white"
       >
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
           <path d="M12 5v14M5 12h14" />
@@ -47,7 +47,7 @@ export function QuickAdd({
           setTimeout(() => setState("idle"), 1600);
         }
       }}
-      className="quick-add flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--panel)] text-[var(--ink)] shadow-md ring-1 ring-[var(--line)] transition hover:bg-[var(--ink)] hover:text-white"
+      className="quick-add flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--panel)] text-[var(--foreground)] shadow-md ring-1 ring-[var(--line)] transition hover:bg-[var(--ink)] hover:text-white"
     >
       {state === "done" ? (
         "✓"

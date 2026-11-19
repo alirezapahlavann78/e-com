@@ -68,7 +68,7 @@ export function RecentlyViewedRail({ excludeSlug, title = "اخیراً دیده
             href={`/products/${item.slug}`}
             className="w-[46%] shrink-0 snap-start sm:w-[30%] lg:w-[16%]"
           >
-            <div className="overflow-hidden rounded-2xl bg-[#ece4d6]">
+            <div className="overflow-hidden rounded-2xl bg-[var(--image-bg)]">
               {item.image ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={item.image} alt={item.name} loading="lazy" className="aspect-[3/4] w-full object-cover transition duration-500 hover:scale-[1.03]" />

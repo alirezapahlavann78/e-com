@@ -134,7 +134,7 @@ export function SearchBox() {
                         onClick={() => setOpen(false)}
                         className="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-[var(--background)]"
                       >
-                        <span className="h-12 w-10 shrink-0 overflow-hidden rounded-lg bg-[#ece4d6]">
+                        <span className="h-12 w-10 shrink-0 overflow-hidden rounded-lg bg-[var(--image-bg)]">
                           {product.images?.[0] ? (
                             /* eslint-disable-next-line @next/next/no-img-element */
                             <img src={product.images[0].url} alt="" className="h-full w-full object-cover" />

@@ -143,12 +143,12 @@ function Hero({ config }: { config: Record<string, any> }) {
         <div className="order-1 lg:order-2">
           <div className="relative">
             <div className="absolute -inset-3 -z-10 rounded-[36px] border border-[var(--line)]" aria-hidden />
-            <div className="overflow-hidden rounded-[28px] bg-[#ece4d6]">
+            <div className="overflow-hidden rounded-[28px] bg-[var(--image-bg)]">
               {config.image ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={config.image} alt={config.title ?? ""} className="h-[380px] w-full object-cover md:h-[560px]" />
               ) : (
-                <div className="h-[420px] w-full bg-[#ece4d6]" />
+                <div className="h-[420px] w-full bg-[var(--image-bg)]" />
               )}
             </div>
             <div className="absolute bottom-4 right-4 flex items-center gap-3 rounded-2xl bg-white/90 px-4 py-3 backdrop-blur">
@@ -187,7 +187,7 @@ async function FeaturedCategoriesAsync({ config }: { config: Record<string, any>
           <Link
             key={category.id}
             href={`/categories/${category.slug}`}
-            className={`group relative overflow-hidden rounded-3xl bg-[#ece4d6] ${index === 0 ? "md:row-span-1" : ""}`}
+            className={`group relative overflow-hidden rounded-3xl bg-[var(--image-bg)] ${index === 0 ? "md:row-span-1" : ""}`}
           >
             <div className="aspect-[4/5] md:aspect-[3/4]">
               {category.imageUrl ? (
@@ -272,7 +272,7 @@ function ImageText({ config }: { config: Record<string, any> }) {
   return (
     <section className="shell section">
       <div className="grid items-center gap-8 md:grid-cols-2 md:gap-14">
-        <div className={`overflow-hidden rounded-[28px] bg-[#ece4d6] ${imageFirst ? "" : "md:order-2"}`}>
+        <div className={`overflow-hidden rounded-[28px] bg-[var(--image-bg)] ${imageFirst ? "" : "md:order-2"}`}>
           {config.image ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={config.image} alt={config.title ?? ""} className="h-[320px] w-full object-cover md:h-[440px]" />
@@ -390,7 +390,7 @@ function ImageSlider({ config }: { config: Record<string, any> }) {
           <Link
             key={`${slide.image}-${index}`}
             href={slide.href ?? "/products"}
-            className="relative w-[78%] shrink-0 snap-center overflow-hidden rounded-3xl bg-[#ece4d6] sm:w-[46%] lg:w-[32%]"
+            className="relative w-[78%] shrink-0 snap-center overflow-hidden rounded-3xl bg-[var(--image-bg)] sm:w-[46%] lg:w-[32%]"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={slide.image} alt={slide.title ?? ""} className="h-[420px] w-full object-cover" />

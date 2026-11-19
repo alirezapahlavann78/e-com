@@ -145,7 +145,7 @@ export default function ComparePage() {
                   return (
                     <th key={item.id} className="border-b border-[var(--line)] p-4 align-top">
                       <div className="text-start">
-                        <Link href={`/products/${item.slug}`} className="block overflow-hidden rounded-2xl bg-[#ece4d6]">
+                        <Link href={`/products/${item.slug}`} className="block overflow-hidden rounded-2xl bg-[var(--image-bg)]">
                           {item.image ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={item.image} alt={item.name} className="aspect-[3/4] w-full object-cover" />

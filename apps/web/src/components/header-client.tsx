@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 import type { StoreLayout } from "./site-chrome";
 import { SearchBox } from "./search-box";
+import { ThemeToggle } from "./theme-toggle";
 import { useCart } from "./cart-store";
 import { useCompare } from "./compare-store";
 
@@ -93,6 +94,7 @@ export function HeaderClient({ layout }: Props) {
 
           <div className="mr-auto flex items-center gap-2 md:mr-0">
             <SearchBox />
+            <ThemeToggle />
 
             <Link
               href="/account"
@@ -171,6 +173,10 @@ export function HeaderClient({ layout }: Props) {
               <Link href="/compare" onClick={() => setOpen(false)} className="rounded-xl px-3 py-3 text-base hover:bg-[var(--panel)]">
                 مقایسه محصولات
               </Link>
+              <div className="mt-6 flex items-center justify-between rounded-xl border border-[var(--line)] px-3 py-2.5">
+                <span className="text-sm">حالت نمایش</span>
+                <ThemeToggle />
+              </div>
               <Link href="/account" onClick={() => setOpen(false)} className="rounded-xl px-3 py-3 text-base hover:bg-[var(--panel)]">
                 حساب من
               </Link>

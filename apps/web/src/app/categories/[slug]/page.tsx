@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { api } from "../../../lib/api";
 import { CatalogView, type CatalogParams } from "../../../components/catalog-view";
 import { PageRenderer, type Section } from "../../../components/cms/PageRenderer";
+import { JsonLd, breadcrumbJsonLd } from "../../../components/json-ld";
 
 type Category = {
   id: string;
@@ -28,6 +29,12 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     return {
       title: category.seoTitle ?? category.name,
       description: category.seoDescription ?? category.description ?? undefined,
+      alternates: { canonical: `/categories/${slug}` },
+      openGraph: {
+        title: category.seoTitle ?? category.name,
+        description: category.seoDescription ?? category.description ?? undefined,
+        images: category.bannerUrl ?? category.imageUrl ? [category.bannerUrl ?? category.imageUrl!] : undefined,
+      },
     };
   } catch {
     return { title: "دسته‌بندی" };
@@ -53,8 +60,17 @@ export default async function CategoryPage({
 
   const templateSections = resolved?.template?.publishedVersion?.sections?.filter((section) => section.isVisible) ?? [];
 
+  const siteUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
+
   return (
     <>
+      <JsonLd
+        data={breadcrumbJsonLd([
+          { name: "خانه", url: siteUrl },
+          { name: "محصولات", url: `${siteUrl}/products` },
+          { name: category.name, url: `${siteUrl}/categories/${slug}` },
+        ])}
+      />
       {templateSections.length ? <PageRenderer sections={templateSections} /> : null}
       <CatalogView
         title={category.name}

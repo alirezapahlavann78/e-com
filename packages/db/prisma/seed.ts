@@ -745,7 +745,7 @@ async function seedMarketing() {
 }
 
 async function seedReviews() {
-  const productRows = await prisma.product.findMany({ take: 6 });
+  const productRows = await prisma.product.findMany({ take: 6, include: { images: { orderBy: { sortOrder: "asc" } } } });
   const users = await prisma.user.findMany({ where: { isAdmin: false } });
   const reviews = [
     { rating: 5, title: "کیفیت عالی", body: "پارچه واقعاً خوبه و اندازه‌ها دقیق. حتماً بازم خرید می‌کنم." },
@@ -756,6 +756,7 @@ async function seedReviews() {
     const existing = await prisma.productReview.findFirst({ where: { productId: product.id } });
     if (existing) continue;
     const review = reviews[index % reviews.length]!;
+    const reviewPhotos = ((product.images ?? []) as { url: string }[]).map((image) => image.url).slice(0, 2);
     await prisma.productReview.create({
       data: {
         productId: product.id,
@@ -767,6 +768,10 @@ async function seedReviews() {
         status: "APPROVED",
         isVerified: true,
         moderatedAt: new Date(),
+        // Every other approved review comes with customer photos (sprint 17).
+        images: index % 2 === 0 && reviewPhotos.length
+          ? { create: reviewPhotos.map((url, photoIndex) => ({ url, alt: product.name, sortOrder: photoIndex })) }
+          : undefined,
       },
     });
     if (index === 0) {
@@ -774,6 +779,19 @@ async function seedReviews() {
         data: { productId: product.id, rating: 3, title: "منتظر بررسی", body: "این نظر در انتظار تأیید است.", status: "PENDING" },
       });
     }
+  }
+
+  // Backfill review photos for catalogues seeded before sprint 17.
+  const photoless = await prisma.productReview.findMany({
+    where: { status: "APPROVED", images: { none: {} }, productId: { in: productRows.map((row) => row.id) } },
+    orderBy: { createdAt: "asc" },
+    select: { id: true, product: { select: { name: true, images: { orderBy: { sortOrder: "asc" }, take: 2 } } } },
+  });
+  for (const [index, review] of photoless.entries()) {
+    if (index % 2 !== 0) continue;
+    const urls = review.product.images.map((image) => image.url);
+    if (!urls.length) continue;
+    await prisma.reviewImage.createMany({ data: urls.map((url, sortOrder) => ({ reviewId: review.id, url, alt: review.product.name, sortOrder })) });
   }
 
   const wishlistUser = users[0];
