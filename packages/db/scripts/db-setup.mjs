@@ -6,24 +6,34 @@
  * download its native migration engine; otherwise `prisma migrate dev` is the
  * recommended path.
  *
- * The script is idempotent and also repairs *drift*: any column that exists in
- * `schema.prisma` but not in the database (typical after pulling new code onto
- * an existing database) is added with `ALTER TABLE ... ADD COLUMN`, so the API
- * stops failing with Prisma `P2022` ("column ... does not exist") without
- * dropping data.
+ * The script is idempotent and repairs two kinds of environment drift:
+ *  1. missing columns (schema changes applied after the database was created) —
+ *     fixed with `ALTER TABLE ... ADD COLUMN`, no data loss;
+ *  2. a database created with a non-UTF8 encoding (typical on Windows, where
+ *     initdb inherits the ANSI code page) — Postgres then rejects Persian text
+ *     with `22P05: character ... has no equivalent in encoding "WIN1252"`.
+ *     With `--reset` the database is recreated as UTF8; without it the script
+ *     stops early and explains how to fix it.
  */
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
+import { loadEnv } from "./load-env.mjs";
 import { schemaColumns, schemaToSql } from "./schema-to-sql.mjs";
+
+loadEnv();
 
 const here = dirname(fileURLToPath(import.meta.url));
 const schemaPath = join(here, "..", "prisma", "schema.prisma");
 const reset = process.argv.includes("--reset");
 const url = process.env.DATABASE_URL ?? "postgresql://postgres:postgres@127.0.0.1:55432/ecom_aghaci";
 
+/** Encodings that can store Persian/Arabic text. SQL_ASCII passes bytes through. */
+const ACCEPTED_ENCODINGS = new Set(["UTF8", "SQL_ASCII"]);
+
 const quote = (identifier) => `"${identifier.replace(/"/g, '""')}"`;
+const clientOptions = { options: "-c client_encoding=UTF8" };
 
 function targetUrl(connectionString, databaseName) {
   const parsed = new URL(connectionString);
@@ -34,15 +44,55 @@ function targetUrl(connectionString, databaseName) {
 async function ensureDatabase(connectionString) {
   const parsed = new URL(connectionString);
   const dbName = parsed.pathname.replace(/^\//, "");
-  const adminUrl = targetUrl(connectionString, "postgres");
-  const client = new pg.Client({ connectionString: adminUrl });
-  await client.connect();
-  const existing = await client.query("SELECT 1 FROM pg_database WHERE datname = $1", [dbName]);
+  const admin = new pg.Client({ connectionString: targetUrl(connectionString, "postgres"), ...clientOptions });
+  await admin.connect();
+
+  const existing = await admin.query(
+    "SELECT pg_encoding_to_char(encoding) AS encoding FROM pg_database WHERE datname = $1",
+    [dbName],
+  );
+
+  let recreated = false;
+
   if (!existing.rowCount) {
-    await client.query(`CREATE DATABASE "${dbName}"`);
-    console.log(`✔ created database ${dbName}`);
+    await admin.query(
+      `CREATE DATABASE ${quote(dbName)} WITH ENCODING 'UTF8' TEMPLATE template0 LC_COLLATE 'C' LC_CTYPE 'C'`,
+    );
+    console.log(`✔ created database ${dbName} (UTF8)`);
+  } else {
+    const encoding = existing.rows[0].encoding;
+    if (ACCEPTED_ENCODINGS.has(encoding)) {
+      console.log(`✔ database ${dbName} encoding: ${encoding}`);
+    } else if (reset) {
+      await admin.query(
+        "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = $1 AND pid <> pg_backend_pid()",
+        [dbName],
+      );
+      await admin.query(`DROP DATABASE ${quote(dbName)}`);
+      await admin.query(
+        `CREATE DATABASE ${quote(dbName)} WITH ENCODING 'UTF8' TEMPLATE template0 LC_COLLATE 'C' LC_CTYPE 'C'`,
+      );
+      recreated = true;
+      console.log(`✔ database ${dbName} recreated with UTF8 (was ${encoding})`);
+    } else {
+      await admin.end();
+      throw new Error(
+        [
+          `Database "${dbName}" uses encoding ${encoding}; Persian text cannot be stored in it.`,
+          "This happens on Windows when the Postgres cluster was initialised with the system code page.",
+          "",
+          "Fix it with one of:",
+          "  pnpm db:reset                       # drops and recreates the database as UTF8",
+          "  remove packages/db/.pgdata          # then: pnpm db:local --fresh",
+          "",
+          "Or point DATABASE_URL at a UTF8 database (e.g. the Docker Postgres on port 5432).",
+        ].join("\n"),
+      );
+    }
   }
-  await client.end();
+
+  await admin.end();
+  return { recreated };
 }
 
 /** Reads the columns that actually exist right now: Map<table, Set<column>>. */
@@ -99,13 +149,16 @@ async function repairDrift(client, schemaSource) {
 }
 
 async function main() {
-  await ensureDatabase(url);
-  const client = new pg.Client({ connectionString: url });
+  const { recreated } = await ensureDatabase(url);
+  const client = new pg.Client({ connectionString: url, ...clientOptions });
   await client.connect();
 
-  if (reset) {
+  if (reset && !recreated) {
     await client.query("DROP SCHEMA public CASCADE; CREATE SCHEMA public;");
     console.log("✔ public schema reset");
+  }
+  if (recreated) {
+    await client.query("CREATE SCHEMA IF NOT EXISTS public;");
   }
 
   const schemaSource = readFileSync(schemaPath, "utf8");
@@ -137,10 +190,13 @@ async function main() {
   }
   for (const warning of warnings) console.warn(`⚠ ${warning}`);
 
+  const encoding = await client.query("SHOW client_encoding");
+  console.log(`✔ client encoding: ${encoding.rows[0].client_encoding}`);
+
   await client.end();
 }
 
 main().catch((error) => {
-  console.error(error);
+  console.error(`\n✖ ${error.message ?? error}\n`);
   process.exit(1);
 });

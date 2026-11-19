@@ -19,7 +19,8 @@
     "setup": "pnpm --filter @ecom/db prisma:generate && pnpm --filter @ecom/db build && pnpm --filter @ecom/db db:setup && pnpm --filter @ecom/db prisma:seed",
     "db:local": "pnpm --filter @ecom/db db:local",
     "db:setup": "pnpm --filter @ecom/db db:setup",
-    "db:reset": "pnpm --filter @ecom/db db:reset"
+    "db:reset": "pnpm --filter @ecom/db db:reset",
+    "db:local:fresh": "pnpm --filter @ecom/db db:local:fresh"
   },
   "devDependencies": {
     "prettier": "^3.6.2",

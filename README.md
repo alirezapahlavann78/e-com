@@ -17,6 +17,9 @@ Monorepo for a production-oriented fashion e-commerce platform (storefront + adm
 
 ## Local setup
 1. Copy `.env.example` to `.env` and adjust secrets/URLs if needed.
+   `DATABASE_URL` defaults to the bundled Postgres (`pnpm db:local`, port 55432); the Docker alternative is
+   commented out. `ADMIN_BOOTSTRAP_EMAIL` / `ADMIN_BOOTSTRAP_PASSWORD` (default `admin@aghaci.local` /
+   `Admin@12345`) are the credentials the seed creates for the admin panel.
 2. Start infrastructure:
    ```powershell
    docker compose -f infra/docker-compose.yml up -d
@@ -53,6 +56,10 @@ Monorepo for a production-oriented fashion e-commerce platform (storefront + adm
 Automated install/migrate/typecheck/build/runtime verification is blocked in environments where `pnpm install` cannot reach the registry. Run the local setup steps above when deps/network are available; treat migrations, seed, typecheck, and runtime smoke checks as required before production use.
 
 ## Troubleshooting
+- **`22P05 ... has no equivalent in encoding "WIN1252"` while seeding** — the Postgres cluster was created with
+  the Windows ANSI code page, so it cannot store Persian text. Run `pnpm db:reset` (the script recreates the
+  database as UTF8 automatically) or `rm -rf packages/db/.pgdata && pnpm db:local:fresh` for a fresh UTF8 cluster.
+  New clusters are always initialised with `--encoding=UTF8 --locale=C` and connections force `client_encoding=UTF8`.
 - **`P2022` / `column Product.brand does not exist`** — the database predates the current `schema.prisma`.
   `pnpm db:setup` now detects missing columns and adds them (`ALTER TABLE ... ADD COLUMN`) without dropping data.
   After pulling schema changes run `pnpm db:generate && pnpm --filter @ecom/db build && pnpm db:setup`.
