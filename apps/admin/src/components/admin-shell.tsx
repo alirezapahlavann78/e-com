@@ -25,6 +25,7 @@ const groups: { title: string; items: Item[] }[] = [
     items: [
       { label: "صفحه‌ها و صفحه‌ساز", href: "/cms/pages", icon: "M4 4h16v16H4zM4 9h16M9 9v11" },
       { label: "نظرات", href: "/reviews", icon: "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10z" },
+      { label: "کتابخانه رسانه", href: "/media", icon: "M3 5h18v14H3zM8 5v14M3 10h18M15 9l4 3-4 3z" },
     ],
   },
   {
@@ -33,6 +34,7 @@ const groups: { title: string; items: Item[] }[] = [
       { label: "مشتریان (CRM)", href: "/customers", icon: "M17 20v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M10 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" },
       { label: "کدهای تخفیف", href: "/discounts", icon: "M20 12l-8 8-9-9V4h7l10 8zM7.5 7.5h.01" },
       { label: "کمپین‌ها", href: "/marketing", icon: "M3 11l18-7-7 18-2-9-9-2z" },
+      { label: "گزارش‌ها", href: "/reports", icon: "M4 20V10M10 20V4M16 20v-7M22 20H2" },
     ],
   },
   {
@@ -40,6 +42,7 @@ const groups: { title: string; items: Item[] }[] = [
     items: [
       { label: "موجودی و انبار", href: "/inventory", icon: "M3 9l9-6 9 6v6l-9 6-9-6V9zM3 9l9 6 9-6M12 15v6" },
       { label: "مرجوعی‌ها", href: "/orders/returns", icon: "M3 12a9 9 0 1 0 3-6.7M3 4v5h5" },
+      { label: "کاربران و نقش‌ها", href: "/users", icon: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.87M16 3.13A4 4 0 0 1 16 11" },
       { label: "تنظیمات", href: "/settings", icon: "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM4 12h1m14 0h1M12 4v1m0 14v1" },
     ],
   },
@@ -58,6 +61,9 @@ const titles: Record<string, string> = {
   "/discounts": "کدهای تخفیف",
   "/cms/pages": "صفحه‌ها و صفحه‌ساز",
   "/settings": "تنظیمات فروشگاه",
+  "/media": "کتابخانه رسانه",
+  "/reports": "گزارش‌ها و خروجی CSV",
+  "/users": "کاربران و نقش‌ها",
 };
 
 function Icon({ path }: { path: string }) {

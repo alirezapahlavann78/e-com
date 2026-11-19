@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { adminApi } from "../../../lib/api";
 import { Badge, Button, Card, Input, Label, Select, Spinner, StatusBadge, Table, TBody, TD, TH, THead, TR, Textarea } from "../../../components/ui";
@@ -357,7 +358,13 @@ export default function OrderDetailPage() {
                 صورتحساب جدید با شماره <span dir="ltr">{lastInvoice.number}</span> صادر شد.
               </p>
             )}
-            <div className="flex justify-end">
+            <div className="flex flex-wrap justify-end gap-2">
+              <Link
+                href={`/orders/${orderId}/invoice`}
+                className="inline-flex items-center rounded-lg border border-[var(--border)] px-4 py-2 text-sm hover:bg-[var(--panel-2)]"
+              >
+                چاپ فاکتور
+              </Link>
               <Button
                 disabled={busy}
                 onClick={() => void runAction(async () => { setLastInvoice(await adminApi<Invoice>(`/admin/orders/${orderId}/invoice`, { method: "POST" })); })}

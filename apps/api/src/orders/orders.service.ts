@@ -65,6 +65,45 @@ export class OrdersService {
     return shipment;
   }
 
+  /**
+   * Everything the printable invoice needs: the order with its items, the
+   * newest invoice number (created on demand) and the store identity.
+   */
+  async invoiceData(id: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id },
+      include: { items: true, user: { select: { firstName: true, lastName: true, phone: true, email: true } }, shipments: true },
+    });
+    if (!order) throw new NotFoundException("Order not found");
+
+    let invoice = await this.prisma.invoice.findFirst({ where: { orderId: id }, orderBy: { issuedAt: "desc" } });
+    if (!invoice) {
+      invoice = await this.prisma.invoice.create({
+        data: {
+          orderId: id,
+          number: invNo(),
+          currency: order.currency,
+          subtotal: order.subtotal,
+          discount: order.discountAmount,
+          tax: order.taxAmount,
+          shipping: order.shippingAmount,
+          total: order.total,
+          payload: { orderNumber: order.number, email: order.email, items: order.items, shippingAddress: order.shippingAddress } as Prisma.InputJsonValue,
+        },
+      });
+    }
+
+    const settings = await this.prisma.storeSetting.findMany({ where: { key: { startsWith: "store." } } });
+    const store: Record<string, string> = {};
+    for (const row of settings) {
+      const raw = row.value as any;
+      const value = raw && typeof raw === "object" && "value" in raw ? raw.value : raw;
+      store[row.key] = value == null ? "" : String(value);
+    }
+
+    return { order, invoice, store };
+  }
+
   async generateInvoice(id: string, actor: AuthUser) {
     const order = await this.prisma.order.findUnique({ where: { id }, include: { items: true } });
     if (!order) throw new NotFoundException("Order not found");
