@@ -20,7 +20,10 @@
     "db:local": "pnpm --filter @ecom/db db:local",
     "db:setup": "pnpm --filter @ecom/db db:setup",
     "db:reset": "pnpm --filter @ecom/db db:reset",
-    "db:local:fresh": "pnpm --filter @ecom/db db:local:fresh"
+    "db:local:fresh": "pnpm --filter @ecom/db db:local:fresh",
+    "user:unlock": "pnpm --filter @ecom/db exec node scripts/account.mjs unlock",
+    "user:passwd": "pnpm --filter @ecom/db exec node scripts/account.mjs passwd",
+    "user:list": "pnpm --filter @ecom/db exec node scripts/account.mjs list"
   },
   "devDependencies": {
     "prettier": "^3.6.2",

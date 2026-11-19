@@ -77,7 +77,14 @@ export default function AccountPage() {
         ),
       });
       const data = await response.json().catch(() => null);
-      if (!response.ok) throw new Error(data?.message ?? "ورود ناموفق بود");
+      if (!response.ok) {
+        if (data?.code === "ACCOUNT_LOCKED") {
+          const minutes = Number(data?.retryAfterMinutes ?? 0);
+          throw new Error(minutes > 0 ? `حساب شما به دلیل تلاش‌های ناموفق تا ${minutes} دقیقه دیگر قفل است.` : "حساب شما موقتاً قفل شده است.");
+        }
+        if (response.status === 429) throw new Error("تعداد تلاش‌های ورود زیاد است؛ حدود یک دقیقه صبر کنید.");
+        throw new Error(data?.message ?? "ورود ناموفق بود");
+      }
       localStorage.setItem("access_token", data.accessToken ?? data.tokens?.accessToken);
       if (data.refreshToken ?? data.tokens?.refreshToken) {
         localStorage.setItem("refresh_token", data.refreshToken ?? data.tokens?.refreshToken);

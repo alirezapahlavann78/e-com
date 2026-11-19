@@ -24,8 +24,10 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fa" dir="rtl">
-      <body className="min-h-screen antialiased">
+    <html lang="fa" dir="rtl" suppressHydrationWarning>
+      {/* suppressHydrationWarning on <body> too: browser extensions inject attributes
+          (cz-shortcut-listen, Grammarly, …) before React hydrates. */}
+      <body className="min-h-screen antialiased" suppressHydrationWarning>
         <SiteHeader />
         <main className="min-h-[55vh]">{children}</main>
         <SiteFooter />

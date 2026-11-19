@@ -5,18 +5,20 @@ import { useState } from "react";
 
 import { ThemeToggle } from "../../components/theme-toggle";
 import { Button, Input, Label } from "../../components/ui";
-import { adminApi, setAdminTokens } from "../../lib/api";
+import { ApiError, adminApi, setAdminTokens } from "../../lib/api";
 
 export default function AdminLogin() {
   const router = useRouter();
   const [email, setEmail] = useState("admin@aghaci.local");
   const [password, setPassword] = useState("Admin@12345");
   const [error, setError] = useState("");
+  const [hint, setHint] = useState("");
   const [busy, setBusy] = useState(false);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     setError("");
+    setHint("");
     setBusy(true);
     try {
       const res = await adminApi<{ accessToken: string; refreshToken: string }>("/auth/login", {
@@ -25,8 +27,28 @@ export default function AdminLogin() {
       });
       setAdminTokens(res.accessToken, res.refreshToken);
       router.push("/");
-    } catch {
-      setError("ورود ناموفق بود. ایمیل یا رمز عبور را بررسی کنید.");
+    } catch (exception) {
+      const apiError = exception instanceof ApiError ? exception : null;
+      const code = String(apiError?.payload?.code ?? "");
+      const retryAfter = Number(apiError?.payload?.retryAfterMinutes ?? 0);
+
+      if (code === "ACCOUNT_LOCKED") {
+        setError(
+          retryAfter > 0
+            ? `حساب شما به دلیل تلاش‌های ناموفق تا ${retryAfter} دقیقه دیگر قفل است.`
+            : "حساب شما به دلیل تلاش‌های ناموفق موقتاً قفل شده است.",
+        );
+        setHint("برای رفع فوری قفل، در ترمینال پروژه دستور «pnpm user:unlock» را اجرا کنید (یا رمز را با «pnpm user:passwd» بازنشانی کنید).");
+      } else if (apiError?.status === 429) {
+        setError("تعداد تلاش‌های ورود بیش از حد مجاز است.");
+        setHint("حدود یک دقیقه صبر کنید و دوباره تلاش کنید.");
+      } else if (code === "INVALID_CREDENTIALS") {
+        const left = Number(apiError?.payload?.remainingAttempts ?? 0);
+        setError("ایمیل یا رمز عبور نادرست است.");
+        if (left > 0) setHint(`تا قفل شدن حساب ${left} تلاش دیگر باقی مانده است.`);
+      } else {
+        setError(apiError?.message ?? "ورود ناموفق بود. اتصال سرور (API) و مقدار DATABASE_URL را بررسی کنید.");
+      }
     } finally {
       setBusy(false);
     }
@@ -91,7 +113,12 @@ export default function AdminLogin() {
               <Label htmlFor="password">رمز عبور</Label>
               <Input id="password" dir="ltr" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
             </div>
-            {error ? <p className="rounded-xl bg-[var(--danger)]/10 px-3 py-2 text-[12px] text-[var(--danger)]">{error}</p> : null}
+            {error ? (
+              <div className="rounded-xl bg-[var(--danger)]/10 px-3 py-2 text-[12px] leading-6 text-[var(--danger)]">
+                <p>{error}</p>
+                {hint ? <p className="mt-1 text-[11px] text-[var(--danger)]/80">{hint}</p> : null}
+              </div>
+            ) : null}
             <Button type="submit" className="w-full py-2.5" disabled={busy}>
               {busy ? "در حال ورود…" : "ورود به پنل"}
             </Button>

@@ -13,6 +13,18 @@ export function clearAdminTokens() {
   localStorage.removeItem("admin_refresh_token");
 }
 
+/** Error thrown by `adminApi`; keeps the HTTP status and the parsed API body. */
+export class ApiError extends Error {
+  status: number;
+  payload: Record<string, unknown> | null;
+  constructor(message: string, status: number, payload: Record<string, unknown> | null) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.payload = payload;
+  }
+}
+
 export async function adminApi<T>(path: string, init?: RequestInit): Promise<T> {
   const base = process.env.NEXT_PUBLIC_API_URL ?? "/api";
   const response = await fetch(`${base}${path}`, {
@@ -27,17 +39,22 @@ export async function adminApi<T>(path: string, init?: RequestInit): Promise<T> 
   const text = await response.text();
   if (!response.ok) {
     let message = text;
+    let payload: Record<string, unknown> | null = null;
     try {
       const parsed = JSON.parse(text);
+      payload = parsed;
       message = Array.isArray(parsed.message) ? parsed.message.join(" · ") : (parsed.message ?? text);
     } catch {
       /* keep raw */
     }
-    if (response.status === 401 && typeof window !== "undefined") {
+    // A 401 on an authenticated screen means the session died: go back to /login.
+    // On the login page itself the credentials were simply wrong — let the form
+    // show the message instead of reloading the page.
+    if (response.status === 401 && typeof window !== "undefined" && !path.startsWith("/auth/login")) {
       clearAdminTokens();
       window.location.href = "/login";
     }
-    throw new Error(message || response.statusText);
+    throw new ApiError(message || response.statusText, response.status, payload);
   }
   return (text ? JSON.parse(text) : null) as T;
 }

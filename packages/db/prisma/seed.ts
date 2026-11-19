@@ -260,7 +260,16 @@ async function seedUsers() {
   const adminPassword = process.env.ADMIN_BOOTSTRAP_PASSWORD ?? "Admin@12345";
   const admin = await prisma.user.upsert({
     where: { email: adminEmail },
-    update: { isAdmin: true, status: "ACTIVE", emailVerified: new Date() },
+    // Re-seeding always restores a working admin: the configured password is
+    // re-applied and any lockout from earlier failed attempts is cleared.
+    update: {
+      isAdmin: true,
+      status: "ACTIVE",
+      emailVerified: new Date(),
+      passwordHash: hashPassword(adminPassword),
+      failedLoginAttempts: 0,
+      lockoutUntil: null,
+    },
     create: {
       email: adminEmail,
       passwordHash: hashPassword(adminPassword),
