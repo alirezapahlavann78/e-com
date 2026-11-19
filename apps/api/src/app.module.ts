@@ -25,6 +25,7 @@ import { ReviewsModule } from "./reviews/reviews.module";
 import { WishlistModule } from "./wishlist/wishlist.module";
 import { StatsModule } from "./stats/stats.module";
 import { ReportsModule } from "./reports/reports.module";
+import { AccountModule } from "./account/account.module";
 import { JwtAuthGuard } from "./common/guards/jwt-auth.guard";
 import { PermissionsGuard } from "./common/guards/permissions.guard";
 import { RateLimitGuard } from "./common/guards/rate-limit.guard";
@@ -55,6 +56,7 @@ import { RateLimitGuard } from "./common/guards/rate-limit.guard";
     WishlistModule,
     StatsModule,
     ReportsModule,
+    AccountModule,
   ],
   controllers: [HealthController],
   providers: [
