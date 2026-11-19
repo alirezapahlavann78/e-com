@@ -746,7 +746,7 @@ export default function AccountPage() {
                 <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
                   {wishlist.map((item) => (
                     <div key={item.id} className="group">
-                      <Link href={`/products/${item.product.slug}`} className="block overflow-hidden rounded-2xl bg-[#ece4d6]">
+                      <Link href={`/products/${item.product.slug}`} className="block overflow-hidden rounded-2xl bg-[var(--image-bg)]">
                         {item.product.images?.[0] ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={item.product.images[0].url} alt="" className="aspect-[4/5] w-full object-cover transition group-hover:scale-[1.03]" />

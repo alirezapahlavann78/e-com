@@ -117,12 +117,12 @@ export function CompareBar() {
         </p>
         <div className="flex flex-1 flex-wrap items-center gap-2">
           {items.map((item) => (
-            <span key={item.id} className="flex items-center gap-2 rounded-full border border-[var(--line)] bg-white py-1 pe-2 ps-1">
+            <span key={item.id} className="flex items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--panel)] py-1 pe-2 ps-1">
               {item.image ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={item.image} alt="" className="h-6 w-6 rounded-full object-cover" />
               ) : (
-                <span className="h-6 w-6 rounded-full bg-[#ece4d6]" />
+                <span className="h-6 w-6 rounded-full bg-[var(--image-bg)]" />
               )}
               <span className="max-w-[9rem] truncate text-[11px]">{item.name}</span>
               <button

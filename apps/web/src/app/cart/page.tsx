@@ -112,7 +112,7 @@ export default function CartPage() {
         <div className="divide-y divide-[var(--line)] border-y border-[var(--line)]">
           {items.map((item: any) => (
             <div key={item.id} className="flex gap-4 py-5">
-              <Link href={`/products/${item.product.slug}`} className="h-32 w-24 shrink-0 overflow-hidden rounded-xl bg-[#ece4d6]">
+              <Link href={`/products/${item.product.slug}`} className="h-32 w-24 shrink-0 overflow-hidden rounded-xl bg-[var(--image-bg)]">
                 {item.product.images?.[0] ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={item.product.images[0].url} alt={item.product.name} className="h-full w-full object-cover" />
@@ -194,7 +194,7 @@ export default function CartPage() {
                 className={`relative h-6 w-11 shrink-0 rounded-full transition ${giftWrap ? "bg-[var(--accent)]" : "bg-[var(--line)]"}`}
               >
                 <span
-                  className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${giftWrap ? "right-[22px]" : "right-0.5"}`}
+                  className={`absolute top-0.5 h-5 w-5 rounded-full bg-[var(--panel)] shadow transition-all ${giftWrap ? "right-[22px]" : "right-0.5"}`}
                 />
               </button>
             </div>
@@ -259,7 +259,7 @@ export default function CartPage() {
                 <p className="text-[11px] text-[var(--accent-strong)]">
                   {formatPrice(summary.freeShippingRemaining)} تا ارسال رایگان
                 </p>
-                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white">
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--line)]">
                   <div
                     className="h-full rounded-full bg-[var(--accent)]"
                     style={{ width: `${Math.min(100, (summary.subtotal / (summary.subtotal + summary.freeShippingRemaining)) * 100)}%` }}

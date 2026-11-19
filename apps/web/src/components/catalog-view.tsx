@@ -314,7 +314,7 @@ export async function CatalogView({
               {description ? <p className="mt-3 text-sm leading-7 text-[var(--muted)]">{description}</p> : null}
             </div>
             {image ? (
-              <div className="hidden h-24 w-40 overflow-hidden rounded-2xl bg-[#ece4d6] md:block">
+              <div className="hidden h-24 w-40 overflow-hidden rounded-2xl bg-[var(--image-bg)] md:block">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={image} alt="" className="h-full w-full object-cover" />
               </div>
@@ -355,7 +355,7 @@ export async function CatalogView({
                 <Link
                   key={chip.label}
                   href={chip.href}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-[var(--line)] bg-white px-3 py-1 text-[11px] text-[var(--foreground)] hover:border-[var(--danger)] hover:text-[var(--danger)]"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--panel)] px-3 py-1 text-[11px] text-[var(--foreground)] hover:border-[var(--danger)] hover:text-[var(--danger)]"
                 >
                   {chip.label}
                   <span aria-hidden="true">×</span>
