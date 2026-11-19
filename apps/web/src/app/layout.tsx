@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 
 import "./globals.css";
+import { CompareBar } from "../components/compare-store";
 import { SiteFooter, SiteHeader } from "../components/site-chrome";
 
 export const metadata: Metadata = {
@@ -31,6 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SiteHeader />
         <main className="min-h-[55vh]">{children}</main>
         <SiteFooter />
+        <CompareBar />
       </body>
     </html>
   );

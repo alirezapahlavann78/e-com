@@ -602,6 +602,8 @@ model Cart {
   guestToken     String?    @unique
   discountCodeId String?
   currency       String     @default("TOMAN")
+  giftWrap       Boolean    @default(false)
+  giftNote       String?
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
   user           User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -675,6 +677,8 @@ model Order {
   shippingAddress   Json?
   billingAddress    Json?
   customerNote      String?
+  giftWrap          Boolean         @default(false)
+  giftNote          String?
   placedAt          DateTime?
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
