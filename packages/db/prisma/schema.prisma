@@ -82,6 +82,18 @@ enum PaymentProvider {
   ZARINPAL
 }
 
+enum NotificationChannel {
+  EMAIL
+  SMS
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  CANCELLED
+}
+
 enum StockMovementType {
   IN
   OUT
@@ -697,6 +709,7 @@ model Order {
   returnRequests    ReturnRequest[]
   refunds           Refund[]
   discountRedemptions DiscountRedemption[]
+  notifications     NotificationMessage[]
 
   @@index([userId, createdAt])
   @@index([status, paymentStatus])
@@ -733,14 +746,18 @@ model Payment {
   currency     String          @default("TOMAN")
   reference    String?
   authority    String?
+  refId        String?
+  callbackUrl  String?
   rawResponse  Json?
   paidAt       DateTime?
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
   order        Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  events       PaymentEvent[]
 
   @@index([orderId, status])
   @@index([reference])
+  @@index([authority])
 }
 
 model Warehouse {
@@ -1162,4 +1179,60 @@ model EmailVerificationToken {
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, purpose, expiresAt])
+}
+
+model PaymentEvent {
+  id             String          @id @default(cuid())
+  paymentId      String?
+  orderId        String?
+  provider       PaymentProvider
+  kind           String
+  authority      String?
+  status         String?
+  amount         Decimal?        @db.Decimal(12, 2)
+  payload        Json?
+  idempotencyKey String?         @unique
+  createdAt      DateTime        @default(now())
+  payment        Payment?        @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([provider, authority])
+  @@index([orderId, createdAt])
+}
+
+model NotificationMessage {
+  id            String              @id @default(cuid())
+  channel       NotificationChannel
+  template      String
+  recipient     String
+  subject       String?
+  body          String
+  status        NotificationStatus  @default(PENDING)
+  provider      String?
+  providerRef   String?
+  attempts      Int                 @default(0)
+  maxAttempts   Int                 @default(5)
+  nextAttemptAt DateTime            @default(now())
+  lockedUntil   DateTime?
+  lastError     String?
+  sentAt        DateTime?
+  orderId       String?
+  dedupeKey     String?             @unique
+  metadata      Json?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  order         Order?              @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([status, nextAttemptAt])
+  @@index([channel, status])
+  @@index([createdAt])
+}
+
+model RateLimitCounter {
+  key         String   @db.VarChar(200)
+  windowStart DateTime
+  count       Int      @default(0)
+  expiresAt   DateTime
+
+  @@id([key, windowStart])
+  @@index([expiresAt])
 }

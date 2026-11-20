@@ -87,6 +87,29 @@ export default function CheckoutPage() {
     }
   }
 
+  async function retryPayment() {
+    const orderNumber = result?.order?.number;
+    if (!orderNumber) return;
+    setBusy(true);
+    setError("");
+    try {
+      const data = await guestFetch<{ redirectUrl: string; provider: string }>(
+        `/payments/orders/${encodeURIComponent(orderNumber)}/retry`,
+        { method: "POST" },
+      );
+      if (data.provider === "SANDBOX") {
+        const authority = new URL(data.redirectUrl).searchParams.get("authority");
+        window.location.href = `/checkout/sandbox?authority=${encodeURIComponent(authority ?? "")}`;
+      } else {
+        window.location.href = data.redirectUrl;
+      }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "اتصال به درگاه ناموفق بود");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   if (result) {
     return (
       <div className="shell py-20">
@@ -106,12 +129,21 @@ export default function CheckoutPage() {
               <span className="font-bold">{formatPrice(result.order?.total)}</span>
             </div>
           </div>
-          <Link
-            href={result.payment?.redirectUrl ?? `/checkout/sandbox?reference=${result.payment?.reference}`}
-            className="btn btn-primary mt-7 w-full"
-          >
-            پرداخت آنلاین
-          </Link>
+          {result.payment?.redirectUrl ? (
+            <a href={result.payment.redirectUrl} className="btn btn-primary mt-7 w-full">
+              پرداخت آنلاین
+            </a>
+          ) : (
+            <button type="button" onClick={retryPayment} disabled={busy} className="btn btn-primary mt-7 w-full disabled:opacity-60">
+              {busy ? "در حال اتصال به درگاه…" : "تلاش دوباره برای پرداخت"}
+            </button>
+          )}
+          {result.paymentError ? (
+            <p className="mt-3 rounded-xl bg-[var(--background)] px-4 py-3 text-[11px] leading-6 text-[var(--muted)]">
+              {result.paymentError}
+            </p>
+          ) : null}
+          {error ? <p className="mt-3 text-[11px] text-[var(--danger)]">{error}</p> : null}
           <Link href="/products" className="mt-3 block text-[11px] text-[var(--muted)]">
             ادامه خرید
           </Link>

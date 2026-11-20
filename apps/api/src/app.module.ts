@@ -26,6 +26,8 @@ import { WishlistModule } from "./wishlist/wishlist.module";
 import { StatsModule } from "./stats/stats.module";
 import { ReportsModule } from "./reports/reports.module";
 import { AccountModule } from "./account/account.module";
+import { NotificationsModule } from "./notifications/notifications.module";
+import { PaymentsModule } from "./payments/payments.module";
 import { JwtAuthGuard } from "./common/guards/jwt-auth.guard";
 import { PermissionsGuard } from "./common/guards/permissions.guard";
 import { RateLimitGuard } from "./common/guards/rate-limit.guard";
@@ -57,6 +59,8 @@ import { RateLimitGuard } from "./common/guards/rate-limit.guard";
     StatsModule,
     ReportsModule,
     AccountModule,
+    NotificationsModule,
+    PaymentsModule,
   ],
   controllers: [HealthController],
   providers: [

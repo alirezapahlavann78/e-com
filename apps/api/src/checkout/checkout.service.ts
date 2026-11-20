@@ -1,14 +1,23 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { CartService } from "../cart/cart.service";
-import { SandboxPaymentAdapter } from "../payments/payment.adapter";
+import { PaymentsService } from "../payments/payments.service";
 import { DiscountsService } from "../discounts/discounts.service";
+import { NotificationService } from "../notifications/notifications.service";
 
 function orderNumber() { return `AG-${Date.now().toString(36).toUpperCase()}`; }
 
 @Injectable()
 export class CheckoutService {
-  constructor(private prisma: PrismaService, private cartService: CartService, private payment: SandboxPaymentAdapter, private discounts: DiscountsService) {}
+  private readonly logger = new Logger(CheckoutService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private cartService: CartService,
+    private payments: PaymentsService,
+    private discounts: DiscountsService,
+    private notifications: NotificationService,
+  ) {}
 
   async createOrder(input: {
     userId?: string;
@@ -70,37 +79,25 @@ export class CheckoutService {
       await tx.cart.update({ where: { id: fresh.id }, data: { discountCodeId: null } });
       return created;
     });
-    const intent = await this.payment.createIntent({ orderId: order.id, amount: Number(order.total), currency: order.currency });
-    const payment = await this.prisma.payment.create({ data: { orderId: order.id, provider: "SANDBOX", status: "PENDING", amount: order.total, currency: order.currency, reference: intent.reference, authority: intent.authority, rawResponse: intent.raw as any } });
-    return { order, payment: { ...payment, redirectUrl: intent.redirectUrl } };
-  }
+    // The order exists from here on. If the gateway is down or misconfigured the
+    // customer must still see the order number and be able to retry payment
+    // (POST /payments/orders/:number/retry) — never a dead end.
+    const start = await this.payments
+      .initiate(order.id)
+      .catch((error: Error) => {
+        this.logger.warn(`payment initiation failed for ${order.number}: ${error.message}`);
+        return null;
+      });
 
-  async verifySandbox(reference: string) {
-    const payment = await this.prisma.payment.findFirst({ where: { reference }, include: { order: true } });
-    if (!payment) throw new NotFoundException("Payment not found");
-    const result = await this.payment.verify({ reference, authority: payment.authority ?? undefined });
-    await this.prisma.$transaction(async (tx) => {
-      const before = await tx.order.findUnique({ where: { id: payment.orderId } });
-      const status = result.status as "PAID" | "FAILED";
-      await tx.payment.update({ where: { id: payment.id }, data: { status, rawResponse: result.raw as any, paidAt: status === "PAID" ? new Date() : null } });
-      const order = await tx.order.update({ where: { id: payment.orderId }, data: { status: status === "PAID" ? "PAID" : "CANCELLED", paymentStatus: status } });
-      await tx.orderStatusHistory.create({ data: { orderId: order.id, fromStatus: before?.status, toStatus: order.status, fromPayment: before?.paymentStatus, toPayment: order.paymentStatus, note: `Sandbox payment ${result.status}` } });
-      if (result.status !== "PAID") {
-        if (before?.discountCodeId) await tx.discountCode.updateMany({ where: { id: before.discountCodeId, usedCount: { gt: 0 } }, data: { usedCount: { decrement: 1 } } });
-        const items = await tx.orderItem.findMany({ where: { orderId: payment.orderId } });
-        const warehouse = await tx.warehouse.findFirst({ where: { isDefault: true, isActive: true } }) ?? await tx.warehouse.findFirst({ where: { isActive: true } });
-        for (const item of items) {
-          if (item.variantId) await tx.productVariant.updateMany({ where: { id: item.variantId }, data: { stockQuantity: { increment: item.quantity } } });
-          else if (item.productId) await tx.product.updateMany({ where: { id: item.productId }, data: { stockQuantity: { increment: item.quantity } } });
-          if (warehouse && item.productId) {
-            const inv = await tx.inventoryItem.findFirst({ where: { warehouseId: warehouse.id, productId: item.productId, variantId: item.variantId ?? null } });
-            if (inv) await tx.inventoryItem.update({ where: { id: inv.id }, data: { quantity: { increment: item.quantity } } });
-            await tx.stockMovement.create({ data: { warehouseId: warehouse.id, productId: item.productId, variantId: item.variantId ?? null, orderId: payment.orderId, type: "RELEASE", quantity: item.quantity, reference, note: "Payment failed/cancelled release" } });
-          }
-        }
-        await tx.stockReservation.updateMany({ where: { orderId: payment.orderId }, data: { status: "RELEASED" } });
-      }
-    });
-    return this.prisma.order.findUnique({ where: { id: payment.orderId }, include: { items: true, payments: true, discountCode: true } });
+    // Queued, not awaited on the critical path: checkout must not wait for SMTP.
+    await this.notifications
+      .notifyOrderPlaced(order)
+      .catch((error: unknown) => this.logger.warn(`order.placed notification failed: ${(error as Error).message}`));
+
+    return {
+      order,
+      payment: start ? { ...start.payment, redirectUrl: start.redirectUrl } : null,
+      paymentError: start ? null : "درگاه پرداخت در دسترس نیست؛ می‌توانید بعداً پرداخت را تکمیل کنید.",
+    };
   }
 }
