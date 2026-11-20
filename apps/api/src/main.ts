@@ -7,10 +7,21 @@ import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { AppModule } from "./app.module";
+import { AllExceptionsFilter } from "./common/logging/all-exceptions.filter";
+import { JsonLogger } from "./common/logging/json.logger";
+import { requestContext } from "./common/logging/request-context";
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  // Two instances: one for Nest's own di framework, one tagged for HTTP lines.
+  const logger = new JsonLogger();
+  const httpLogger = new JsonLogger("http");
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { logger });
   app.setGlobalPrefix("api");
+
+  // Request id + one structured log line per request (status, duration, user).
+  app.use(requestContext(httpLogger));
+  app.useGlobalFilters(new AllExceptionsFilter(httpLogger));
+  app.enableShutdownHooks();
 
   // Media uploads are sent as base64 JSON (see MediaController.upload), so the
   // body limit has to cover an 8 MB image plus base64 overhead.
@@ -44,6 +55,12 @@ async function bootstrap() {
 
   const port = Number(process.env.API_PORT ?? 4000);
   await app.listen(port);
+  logger.log(`API listening on http://0.0.0.0:${port}/api`, { port, env: process.env.NODE_ENV ?? "development" });
 }
 
-bootstrap();
+bootstrap().catch((error) => {
+  process.stdout.write(
+    `${JSON.stringify({ time: new Date().toISOString(), level: "error", service: "api", message: "bootstrap failed", error: (error as Error).message, stack: (error as Error).stack })}\n`,
+  );
+  process.exit(1);
+});

@@ -16,6 +16,7 @@ const groups: { title: string; items: Item[] }[] = [
     items: [
       { label: "داشبورد", href: "/", icon: "M3 12l9-8 9 8M5 10v10h5v-6h4v6h5V10" },
       { label: "سفارش‌ها", href: "/orders", icon: "M6 2h12l2 6v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8l2-6zM6 8h12M9 13h6" },
+      { label: "پرداخت‌ها", href: "/payments", icon: "M2 7h20v12H2zM2 11h20M6 15h4" },
       { label: "محصولات", href: "/products", icon: "M21 8l-9-5-9 5 9 5 9-5zM3 8v8l9 5 9-5V8" },
       { label: "دسته‌بندی‌ها", href: "/categories", icon: "M4 5h16M4 12h16M4 19h10" },
     ],
@@ -34,6 +35,7 @@ const groups: { title: string; items: Item[] }[] = [
       { label: "مشتریان (CRM)", href: "/customers", icon: "M17 20v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M10 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" },
       { label: "کدهای تخفیف", href: "/discounts", icon: "M20 12l-8 8-9-9V4h7l10 8zM7.5 7.5h.01" },
       { label: "کمپین‌ها", href: "/marketing", icon: "M3 11l18-7-7 18-2-9-9-2z" },
+      { label: "پیام‌ها", href: "/notifications", icon: "M4 5h16v12H8l-4 4V5z" },
       { label: "گزارش‌ها", href: "/reports", icon: "M4 20V10M10 20V4M16 20v-7M22 20H2" },
     ],
   },

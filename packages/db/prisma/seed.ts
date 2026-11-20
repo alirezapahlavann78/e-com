@@ -1054,6 +1054,18 @@ async function seedSettings() {
   for (const [key, value] of settings) {
     await prisma.storeSetting.upsert({ where: { key }, update: { value }, create: { key, value } });
   }
+
+  // Operator-editable configuration: created with a default the first time and
+  // never overwritten afterwards, so re-seeding cannot wipe a merchant id or a
+  // gateway switch configured from the admin panel.
+  const configDefaults = [
+    ["payment.gateway", { provider: "SANDBOX", zarinpal: { merchantId: "", sandbox: true } }],
+    ["notifications.email", { enabled: true }],
+    ["notifications.sms", { enabled: true }],
+  ] as const;
+  for (const [key, value] of configDefaults) {
+    await prisma.storeSetting.upsert({ where: { key }, update: {}, create: { key, value } });
+  }
 }
 
 async function main() {

@@ -1,15 +1,22 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@ecom/db";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../audit/audit.service";
 import { AuthUser } from "../common/decorators/current-user.decorator";
+import { NotificationService } from "../notifications/notifications.service";
 import { UpdateOrderStatusDto, CreateOrderNoteDto, CreateShipmentDto, UpdateReturnDto, CreateRefundDto } from "./dto/orders.dto";
 
 function invNo() { return `INV-${Date.now().toString(36).toUpperCase()}`; }
 
 @Injectable()
 export class OrdersService {
-  constructor(private prisma: PrismaService, private audit: AuditService) {}
+  private readonly logger = new Logger(OrdersService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private audit: AuditService,
+    private notifications: NotificationService,
+  ) {}
 
   private include = {
     items: true, payments: true, statusHistory: { orderBy: { createdAt: "desc" as const } },
@@ -37,7 +44,7 @@ export class OrdersService {
   }
 
   async updateStatus(id: string, dto: UpdateOrderStatusDto, actor: AuthUser) {
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const before = await tx.order.findUnique({ where: { id } });
       if (!before) throw new NotFoundException("Order not found");
       const data: any = {};
@@ -46,8 +53,21 @@ export class OrdersService {
       const order = await tx.order.update({ where: { id }, data });
       await tx.orderStatusHistory.create({ data: { orderId: id, fromStatus: before.status, toStatus: order.status, fromPayment: before.paymentStatus, toPayment: order.paymentStatus, note: dto.note, actorId: actor.id, actorEmail: actor.email } });
       await this.audit.log({ actorId: actor.id, actorEmail: actor.email, action: "order.status.update", entity: "Order", entityId: id, before: before as any, after: order as any });
-      return order;
+      return { order, before };
     });
+
+    // Transactional notice on the PENDING→SHIPPED edge only, so re-saving a
+    // status or editing a note does not spam the customer.
+    if (result.order.status === "SHIPPED" && result.before.status !== "SHIPPED") {
+      const shipment = await this.prisma.shipment.findFirst({
+        where: { orderId: id },
+        orderBy: { createdAt: "desc" },
+      });
+      await this.notifications
+        .notifyOrderShipped(result.order, shipment)
+        .catch((error: unknown) => this.logger.warn(`order.shipped notification failed: ${(error as Error).message}`));
+    }
+    return result.order;
   }
 
   async addNote(id: string, dto: CreateOrderNoteDto, actor: AuthUser) {

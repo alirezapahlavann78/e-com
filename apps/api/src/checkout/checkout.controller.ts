@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Post, Query } from "@nestjs/common";
+import { Body, Controller, Post } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import { Public } from "../common/decorators/public.decorator";
+import { RateLimit } from "../common/decorators/rate-limit.decorator";
 import { CurrentUser, type AuthUser } from "../common/decorators/current-user.decorator";
 import { CheckoutService } from "./checkout.service";
 
@@ -8,7 +9,7 @@ import { CheckoutService } from "./checkout.service";
 @Controller("checkout")
 export class CheckoutController {
   constructor(private checkout: CheckoutService) {}
-  @Public() @Post()
+  @Public() @RateLimit(12, 60_000) @Post()
   create(
     @Body()
     body: {
@@ -23,6 +24,4 @@ export class CheckoutController {
   ) {
     return this.checkout.createOrder({ userId: user?.id, ...body });
   }
-  @Public() @Get("sandbox/verify")
-  verify(@Query("reference") reference: string) { return this.checkout.verifySandbox(reference); }
 }

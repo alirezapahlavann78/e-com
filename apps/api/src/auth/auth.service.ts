@@ -8,6 +8,7 @@ import { hashPassword, hashToken, verifyPassword } from "./crypto";
 import type { RegisterDto } from "./dto/register.dto";
 import type { LoginDto } from "./dto/login.dto";
 import { issueEmailVerification } from "./verification";
+import { NotificationService } from "../notifications/notifications.service";
 
 function parseTtl(value: string | undefined, fallbackSeconds: number): number {
   if (!value) return fallbackSeconds;
@@ -19,7 +20,13 @@ function parseTtl(value: string | undefined, fallbackSeconds: number): number {
 
 @Injectable()
 export class AuthService {
-  constructor(private prisma: PrismaService, private jwt: JwtService, private config: ConfigService, private audit: AuditService) {}
+  constructor(
+    private prisma: PrismaService,
+    private jwt: JwtService,
+    private config: ConfigService,
+    private audit: AuditService,
+    private notifications: NotificationService,
+  ) {}
   private accessTtl() { return parseTtl(this.config.get("JWT_ACCESS_TTL"), 900); }
   private refreshTtl() { return parseTtl(this.config.get("JWT_REFRESH_TTL"), 2592000); }
   private lockoutMax() { return Number(this.config.get("AUTH_LOCKOUT_MAX_ATTEMPTS") ?? 5); }
@@ -40,6 +47,8 @@ export class AuthService {
     const verification = await issueEmailVerification(this.prisma, user.id);
     await this.audit.log({ actorId: user.id, actorEmail: user.email, action: "auth.register", entity: "User", entityId: user.id, ipAddress: meta?.ip, userAgent: meta?.ua });
     const tokens = await this.issueTokens(user, randomUUID(), meta);
+    // Queued: a mail hiccup must never block signup.
+    await this.notifications.notifyWelcome(user).catch(() => undefined);
     return { user: this.safeUser(user), ...tokens, emailVerification: { required: true, expiresAt: verification.expiresAt, devToken: this.config.get("NODE_ENV") !== "production" ? verification.token : undefined } };
   }
 
